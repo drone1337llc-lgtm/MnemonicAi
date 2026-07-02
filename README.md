@@ -151,5 +151,5 @@ keep the core dependency-free. See [CHANGELOG.md](CHANGELOG.md) for release hist
 
 ## License
 
-MIT for the code (see [LICENSE](LICENSE)). Music is separately licensed via Artlist and
+https://creativecommons.org/licenses/by-nc-sa/4.0/ for the code. Music is separately licensed via Artlist and
 is **not** covered by the MIT license.
