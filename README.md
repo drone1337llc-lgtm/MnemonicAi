@@ -38,7 +38,7 @@ git clone https://github.com/drone1337llc-lgtm/MnemonicAi.git
 cd MnemonicAi
 
 # one-file install (installs QLoRA deps, checks CUDA, finds your model)
-python3 install.py --model "C:/Users/Tench/Documents/mnemonicai_project/models/ornith-1.0-9b"     # flat safetensors OR HF cache layout
+python3 install.py --model "path-to-cloned-repo/mnemonicai_project/models/ornith-1.0-9b"     # flat safetensors OR HF cache layout
 
 # one-file run (model + memory engine + live brain monitor)
 python3 start.py
