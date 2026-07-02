@@ -1,0 +1,5 @@
+# Mnemosyne has NO required runtime dependencies (Python 3.8+, stdlib only).
+# The two packages below are OPTIONAL and only bring convenience / speed:
+
+# numpy      # optional: faster vector math (a pure-Python fallback is built in)
+# requests   # optional: not needed — OpenAI-compatible calls use stdlib urllib

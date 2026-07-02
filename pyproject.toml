@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mnemonicai"
+version = "2.2.0"
+description = "A brain-inspired memory system that gives a self-hosted LLM human-like memory: short-term recall, sleep consolidation, LoRA weight-baking, and forgetting."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["llm", "agents", "memory", "neuroscience", "lora", "qlora", "consolidation", "ornith"]
+dependencies = []   # the server + memory engine + monitor need NO third-party packages
+
+[project.optional-dependencies]
+# The real self-hosted ornith-1.0-9b backend (NVIDIA GPU, QLoRA):
+gpu = [
+    "torch>=2.1",
+    "transformers>=4.40",
+    "peft>=0.10",
+    "bitsandbytes>=0.43",
+    "accelerate>=0.30",
+    "safetensors>=0.4",
+    "sentencepiece>=0.1.99",
+    "protobuf>=3.20",
+]
+
+[project.scripts]
+mnemonicai = "mnemonicai.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mnemonicai*"]
+
+[tool.setuptools.package-data]
+mnemonicai = ["web/*.html"]

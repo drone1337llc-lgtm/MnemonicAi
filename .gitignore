@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+mnemonicai_data/
+models/
+config.json
+.env
+*.db
+*.zip
+.DS_Store
+Lib/

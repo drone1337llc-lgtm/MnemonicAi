@@ -1,0 +1,13 @@
+# GPU dependencies for the REAL ornith-1.0-9b backend (NVIDIA, QLoRA).
+# The offline/mock mode and the memory engine need NONE of these.
+#
+# Install PyTorch matching your CUDA from https://pytorch.org first if needed, e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1
+transformers>=4.40
+peft>=0.10
+bitsandbytes>=0.43
+accelerate>=0.30
+safetensors>=0.4
+sentencepiece>=0.1.99
+protobuf>=3.20

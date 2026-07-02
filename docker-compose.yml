@@ -1,0 +1,26 @@
+# MnemonicAi with GPU. Put your weights in ./models/ornith-1.0-9b and run:
+#   docker compose up --build
+# Then open http://localhost:8400/  and point clients at http://localhost:8400/v1
+services:
+  mnemonicai:
+    build: .
+    image: mnemonicai:latest
+    ports:
+      - "8400:8400"
+    volumes:
+      - ./models:/models        # your ornith-1.0-9b HF weights
+      - ./mnemonicai_data:/data   # persisted memory + LoRA adapter
+    environment:
+      - MNEMONICAI_MODEL=/models/ornith-1.0-9b
+      - MNEMONICAI_DATA=/data
+      - MNEMONICAI_HOST=0.0.0.0
+    # GPU access (Docker + NVIDIA Container Toolkit required):
+    gpus: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped

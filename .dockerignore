@@ -1,0 +1,9 @@
+mnemonicai_data/
+models/
+**/__pycache__/
+*.pyc
+*.db
+.env
+.git/
+*.zip
+config.json
