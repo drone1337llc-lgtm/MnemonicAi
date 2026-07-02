@@ -15,8 +15,7 @@ weights** while it sleeps — with a live cosmic brain monitor so you can watch 
 ---
 
 ## Why
- "model_path": "C:/Users/Tench/Documents/mnemonicai_project/models/ornith-1.0-9b",
-  "gguf_path": "C:/Users/Tench/Documents/mnemonicai_project/models/ornith-1.0-9bgguf/ornith-1.0-9b-Q4_K_M.gguf",
+
 Today's LLMs either cram everything into the context window or dump it all into a vector
 store that never forgets. Neither behaves like a mind. MnemonicAi gives a local model
 **two-speed memory, exactly like a brain**:
