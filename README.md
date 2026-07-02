@@ -151,5 +151,9 @@ keep the core dependency-free. See [CHANGELOG.md](CHANGELOG.md) for release hist
 
 ## License
 
-https://creativecommons.org/licenses/by-nc-sa/4.0/ for the code. Music is separately licensed via Artlist and
+
+MnemonicAi  © 2026 by Sergio D Williams is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International. To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/4.0/
+ for the code. 
+ 
+Music is separately licensed via Artlist and
 is **not** covered by the MIT license.
