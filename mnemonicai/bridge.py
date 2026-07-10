@@ -62,9 +62,19 @@ class MemoryChat:
         self.bus.publish({"type": "chat", "role": "assistant", "preview": reply[:120]})
         self.turns += 1
         if self.cfg.sleep_every_n_turns and self.turns % self.cfg.sleep_every_n_turns == 0:
-            self.mem.sleep()  # emits a "consolidate" event
-            if self.cfg.train_on_sleep:
-                self.trainer.consolidate_to_weights()  # emits "train" events
+            # A failed sleep/train pass must never break the chat reply that
+            # triggered it — memories stay in the DB and the next sleep
+            # retries. (Training can OOM when sharing the GPU with the
+            # inference engine.)
+            try:
+                self.mem.sleep()  # emits a "consolidate" event
+                if self.cfg.train_on_sleep:
+                    self.trainer.consolidate_to_weights()  # emits "train" events
+            except Exception as e:
+                print(f"[bridge] sleep/train pass failed (will retry next "
+                      f"sleep): {e}")
+                self.bus.publish({"type": "train", "phase": "failed",
+                                  "error": str(e)[:200]})
         self.publish_state()
 
     def state_dict(self, max_memories: int = 150) -> dict:

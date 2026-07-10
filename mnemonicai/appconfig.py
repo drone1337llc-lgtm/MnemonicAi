@@ -33,10 +33,21 @@ class AppConfig:
     inference_model: str = ""      # model id on the remote engine (default: model_name)
     inference_api_key: str = ""    # bearer token if the remote engine needs one
     # ---- hybrid backend (blue/green local engines + train/convert/swap) ----
-    llama_server_exe: str = ""     # path to llama-server.exe
+    llama_server_exe: str = ""     # path to llama-server (.exe on Windows)
     lora_convert_script: str = ""  # path to llama.cpp's convert_lora_to_gguf.py
+    engine_ctx: int = 32768        # llama-server context size; keep modest so
+                                   # two engines + QLoRA training share the GPU
+    engine_parallel: int = 2       # llama-server slots (each gets ctx/parallel)
+    engine_kv_type: str = "q8_0"   # KV cache quantization ("" = f16)
     load_in_4bit: bool = True
     max_new_tokens: int = 384
+    max_new_tokens_cap: int = 8192  # hard ceiling on client-requested output
+                                    # (prompt + output must fit engine_ctx)
+    agent_temperature: float = 0.2  # sampling temp for tool-calling requests
+                                    # that don't set their own; low = reliable
+                                    # tool formatting (agents send temp=None,
+                                    # and the engine default ~0.8 is erratic)
+    agent_top_p: float = 0.9
     temperature: float = 0.7
     top_p: float = 0.9
 

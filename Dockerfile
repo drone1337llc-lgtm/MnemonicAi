@@ -1,6 +1,6 @@
 # Dockerfile — MnemonicAi inference + training image
 # Target: CUDA 12.6 + Python 3.12
-FROM nvidia/cuda:12.6.0-runtime-ubuntu24.04
+FROM runpod/pytorch:2.2.0-py3.10-cuda12.1.1-developer
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -50,11 +50,11 @@ RUN pip install --no-cache-dir \
     "prometheus-client>=0.21"
 
 # ---------- app copy ----------
-WORKDIR /app
-COPY . /app
+WORKDIR /
+COPY src/ .
 
 # ---------- editable install ----------
-RUN pip install -e /app 2>/dev/null || true
+RUN pip install runpod transformers
 
 # ---------- entrypoint ----------
 RUN chmod +x /app/mn_*.sh 2>/dev/null || true
@@ -64,4 +64,4 @@ EXPOSE 8400 8401
 HEALTHCHECK --interval=30s --timeout=15s --start-period=90s --retries=3 \
     CMD curl -fsS http://localhost:8400/health || exit 1
 
-CMD ["python", "start.py", "--host", "0.0.0.0", "--port", "8400", "--data-dir", "mnemonicai_data"]
+CMD ["python", "-u", "/handler.py"]

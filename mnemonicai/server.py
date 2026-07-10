@@ -57,6 +57,45 @@ def _normalize_messages(messages):
     return norm
 
 
+def _sanitize_for_template(messages):
+    """Make a raw client message list safe for the model's chat template
+    without losing tool-calling structure (unlike _normalize_messages,
+    which flattens everything to plain text).
+
+    Agent clients (Hermes) append empty assistant placeholders, producing
+    trailing/consecutive assistant turns that the Qwen template rejects
+    ("Cannot have 2 or more assistant messages at the end of the list").
+    Drop content-less assistant messages that carry no tool_calls, and
+    merge any assistant turns that remain adjacent.
+    """
+    out = []
+    for m in messages or []:
+        if not isinstance(m, dict):
+            continue
+        m = dict(m)
+        role = m.get("role")
+        content = m.get("content")
+        has_text = bool(content.strip()) if isinstance(content, str) else (
+            content is not None and not isinstance(content, str))
+        has_tc = bool(m.get("tool_calls"))
+        # drop empty assistant placeholders (no text, no tool call)
+        if role == "assistant" and not has_text and not has_tc:
+            continue
+        # merge an assistant turn that would sit right after another
+        if role == "assistant" and out and out[-1].get("role") == "assistant":
+            prev = out[-1]
+            pc, cc = prev.get("content") or "", content or ""
+            if isinstance(pc, str) and isinstance(cc, str):
+                prev["content"] = pc + ("\n" if pc and cc else "") + cc
+            elif cc:
+                prev["content"] = cc
+            if m.get("tool_calls"):
+                prev["tool_calls"] = (prev.get("tool_calls") or []) + m["tool_calls"]
+            continue
+        out.append(m)
+    return out
+
+
 def _find_monitor() -> str:
     """Locate monitor.html across source, packaged, and cwd layouts."""
     candidates = [
@@ -201,12 +240,31 @@ def make_handler(app: App):
             if path in ("/v1/chat/completions", "/chat/completions"):
                 messages = _normalize_messages(req.get("messages", []))
                 max_tokens = req.get("max_tokens") or req.get("max_completion_tokens")
+                # Clamp the requested output budget: llama-server counts
+                # prompt + max_tokens against the context window and rejects
+                # the whole request when the sum exceeds it. Agent clients
+                # (Hermes) often ask for huge outputs (e.g. 60000), which
+                # turned a 19k-token prompt into an instant 400.
+                cap = getattr(app.cfg, "max_new_tokens_cap", 8192)
+                if max_tokens and cap:
+                    try:
+                        max_tokens = min(int(max_tokens), cap)
+                    except (TypeError, ValueError):
+                        max_tokens = None
                 if os.environ.get("MNEMONICAI_DEBUG_REQUESTS"):
                     total = sum(len(m["content"]) for m in messages)
                     print(f"[req] {self.client_address[0]} stream={bool(req.get('stream'))} "
                           f"msgs={len(messages)} chars={total} max_tokens={max_tokens} "
+                          f"tools={len(req.get('tools') or [])} "
                           f"extra_keys={sorted(set(req) - {'messages', 'model', 'stream', 'max_tokens', 'temperature', 'top_p'})}",
                           flush=True)
+                # Tool-calling / agent requests (Hermes): the memory pipeline
+                # returns plain text and would drop `tools` and the resulting
+                # `tool_calls`, so the client stalls waiting for an action.
+                # Hand these straight to the engine, which speaks tools.
+                if req.get("tools") and hasattr(app.backend, "proxy_chat"):
+                    self._chat_tools_passthrough(req, max_tokens)
+                    return
                 if bool(req.get("stream", False)):
                     self._chat_stream(messages, max_tokens)
                 else:
@@ -230,6 +288,41 @@ def make_handler(app: App):
                     self._json(app.chat.admin_delete(req.get("id", "")))
                 elif path == "/api/memory/pin":
                     self._json(app.chat.admin_pin(req.get("id", "")))
+                elif path == "/admin/swap-base":
+                    # Zero-downtime base-model switch (hybrid backend only).
+                    # Body: {"gguf_path": "...", "model_path": "..."(optional),
+                    #        "model_name": "..."(optional)}
+                    if not hasattr(app.backend, "mgr"):
+                        self._json({"error": "base swapping needs the hybrid "
+                                    "backend (blue/green llama-server pair); "
+                                    f"current backend is '{app.backend.name}'"},
+                                   409)
+                        return
+                    gguf = req.get("gguf_path", "")
+                    if not gguf or not os.path.isfile(gguf):
+                        self._json({"error": f"gguf_path not found: '{gguf}'"},
+                                   400)
+                        return
+                    model_path = req.get("model_path", "")
+                    if model_path and not os.path.isdir(model_path):
+                        self._json({"error": "model_path (HF dir for "
+                                    f"sleep-training) not found: '{model_path}'"},
+                                   400)
+                        return
+                    app.backend.mgr.swap_base(gguf)  # raises if unhealthy
+                    # persist so restarts and sleep-training use the new base
+                    app.cfg.gguf_path = gguf
+                    if model_path:
+                        app.cfg.model_path = model_path
+                    if req.get("model_name"):
+                        app.cfg.model_name = req["model_name"]
+                    app.cfg.save()
+                    self._json({"status": "swapped",
+                                "gguf_path": gguf,
+                                "model_path": app.cfg.model_path,
+                                "adapter_version": 0,
+                                "note": "memory adapter reset; sleep-training "
+                                        "rebuilds it on the new base"})
                 else:
                     self._json({"error": "not found", "path": path}, 404)
             except Exception as e:
@@ -273,6 +366,72 @@ def make_handler(app: App):
             except Exception as e:
                 try:
                     self._sse_send({"error": str(e)})
+                except Exception:
+                    pass
+
+        # ---- tool-calling passthrough (agent clients) ----
+        def _perceive_last_user(self, req):
+            """Feed the latest user turn into memory (best-effort). We don't
+            inject recall into agent context — that could derail the agent —
+            but learned memory still reaches the model via the trained
+            adapter."""
+            try:
+                for m in reversed(req.get("messages", [])):
+                    if m.get("role") == "user":
+                        c = m.get("content")
+                        if isinstance(c, list):
+                            c = " ".join(p.get("text", "") for p in c
+                                         if isinstance(p, dict))
+                        if isinstance(c, str) and c.strip():
+                            app.chat.admin_perceive(c.strip()[:4000], None)
+                        break
+            except Exception as e:
+                print(f"[passthrough] perceive skipped: {e}", flush=True)
+
+        def _chat_tools_passthrough(self, req, max_tokens):
+            payload = dict(req)
+            payload["messages"] = _sanitize_for_template(req.get("messages"))
+            if max_tokens:
+                payload["max_tokens"] = max_tokens
+                payload.pop("max_completion_tokens", None)
+            # Agent clients (Hermes) send no sampling params, so the engine
+            # falls back to its high default (~0.8) — which makes this model
+            # emit tool calls erratically or refuse. Pin a low temperature
+            # for tool requests unless the client set one explicitly.
+            if req.get("temperature") is None:
+                payload["temperature"] = getattr(app.cfg, "agent_temperature", 0.2)
+            if req.get("top_p") is None:
+                payload["top_p"] = getattr(app.cfg, "agent_top_p", 0.9)
+            stream = bool(req.get("stream", False))
+            try:
+                resp = app.backend.proxy_chat(payload)
+            except Exception as e:
+                # surface the engine's own error body if there is one
+                detail = getattr(e, "read", lambda: b"")()
+                msg = detail.decode("utf-8", "replace")[:500] if detail else str(e)
+                self._json({"error": f"engine passthrough failed: {msg}"}, 502)
+                return
+            self._perceive_last_user(req)
+            try:
+                if stream:
+                    self._sse_open()
+                    for raw in resp:  # relay the engine's SSE verbatim
+                        if raw:
+                            self.wfile.write(raw)
+                            self.wfile.flush()
+                else:
+                    body = resp.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self._cors()
+                    self.end_headers()
+                    self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            finally:
+                try:
+                    resp.close()
                 except Exception:
                     pass
 

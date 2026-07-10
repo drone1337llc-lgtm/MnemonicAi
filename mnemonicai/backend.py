@@ -137,8 +137,7 @@ class TransformersPeftBackend:
         import torch  # noqa
         from transformers import (AutoModelForCausalLM, AutoTokenizer,
                                    BitsAndBytesConfig)
-        from peft import (LoraConfig, PeftModel, get_peft_model,
-                          prepare_model_for_kbit_training)
+        from peft import LoraConfig, PeftModel, get_peft_model
 
         self.cfg = cfg
         self.torch = torch
@@ -165,7 +164,18 @@ class TransformersPeftBackend:
         model = AutoModelForCausalLM.from_pretrained(
             cfg.model_path, quantization_config=quant, device_map="auto",
             dtype=torch.bfloat16)
-        model = prepare_model_for_kbit_training(model)
+        # Targeted k-bit training prep instead of peft's
+        # prepare_model_for_kbit_training: that helper upcasts EVERY
+        # non-quantized param to fp32, including the ~1B-element embed and
+        # lm_head (3.8 GiB each) — which is what OOM'd this box. Only the
+        # 1-D norm params actually need fp32 for training stability.
+        for param in model.parameters():
+            param.requires_grad = False
+            if param.ndim == 1:
+                param.data = param.data.to(torch.float32)
+        model.gradient_checkpointing_enable()
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
 
         adapter_ready = (os.path.isdir(cfg.adapter_dir)
                          and os.path.isfile(os.path.join(cfg.adapter_dir, "adapter_config.json")))
@@ -339,6 +349,24 @@ class RemoteOpenAIBackend:
     def generate(self, messages, max_new_tokens=None) -> str:
         return "".join(self.generate_stream(messages, max_new_tokens)).strip()
 
+    def engine_base(self) -> str:
+        """Base /v1 URL of the live inference engine. Overridden by the
+        hybrid backend to follow blue/green swaps."""
+        return self.base
+
+    def proxy_chat(self, payload: dict):
+        """Forward a raw OpenAI chat-completions payload straight to the
+        engine and return the open urllib response (caller relays it).
+
+        Used for tool-calling / agent requests: the memory pipeline models
+        replies as plain text and would drop `tools` and the `tool_calls`
+        the client needs to act. The engine handles tools natively, so we
+        pass those requests through untouched."""
+        payload = dict(payload)
+        payload["model"] = self.model
+        req = self._request(f"{self.engine_base()}/chat/completions", payload)
+        return self._rq.urlopen(req, timeout=600)
+
     def train(self, examples: List[dict]) -> dict:
         print("[backend] remote backend cannot train; skipping sleep-training "
               "step (memories still consolidate to DB).")
@@ -387,6 +415,13 @@ class HybridBackend(RemoteOpenAIBackend):
     def adapter_version(self, v):
         pass  # version is owned by hotswap's engine state file
 
+    def engine_base(self) -> str:
+        # follow blue/green swaps: always proxy to the live engine
+        url = self.mgr.active_url()
+        if url:
+            self.base = url
+        return self.base
+
     def generate_stream(self, messages, max_new_tokens=None) -> Iterator[str]:
         # refresh routing before every request so swaps take effect instantly
         url = self.mgr.active_url()
@@ -408,9 +443,19 @@ class HybridBackend(RemoteOpenAIBackend):
             tb.model.save_pretrained(adapter_dir)
             # transformers 5 exposes NemotronH modules as model.layers.*, but
             # llama.cpp's converter maps the checkpoint's original backbone.*
-            # names — rename adapter keys accordingly (no-op for other archs).
+            # names — rename adapter keys accordingly. NemotronH ONLY: for
+            # every other arch (Qwen, Llama, ...) the converter expects the
+            # model.* names and the rename breaks tensor mapping.
             st_path = os.path.join(adapter_dir, "adapter_model.safetensors")
-            if os.path.isfile(st_path):
+            arch = ""
+            try:
+                import json as _json
+                cfg_json = os.path.join(self.cfg.model_path, "config.json")
+                with open(cfg_json, encoding="utf-8") as f:
+                    arch = " ".join(_json.load(f).get("architectures", []))
+            except Exception:
+                pass
+            if "nemotron" in arch.lower() and os.path.isfile(st_path):
                 from safetensors.torch import load_file, save_file
                 tensors = load_file(st_path)
                 renamed = {
@@ -608,4 +653,9 @@ def build_backend(cfg, log=print):
         log("[backend] TransformersPeftBackend FAILED to load — real error "
             "below; falling back to MockBackend:")
         log(traceback.format_exc())
+        # release whatever portion of the model made it onto the GPU before
+        # the failure, so the mock fallback doesn't squat on VRAM
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
         return MockBackend(cfg)

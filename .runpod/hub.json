@@ -1,0 +1,22 @@
+{
+  "title": "MnemonicAi",
+    "description": "Your custom LLM and codebase worker description",
+      "type": "serverless",
+        "category": "language",
+          "iconUrl": "https://example.com/icon.png",
+            "config": {
+                "runsOn": "GPU",
+                    "containerDiskInGb": 50,
+                        "env": [
+                              {
+                                      "key": "HF_TOKEN",
+                                              "input": {
+                                                        "name": "Hugging Face Token",
+                                                                  "type": "string",
+                                                                            "description": "Your Hugging Face API token (if downloading a gated model)",
+                                                                                      "default": ""
+                                                                                              }
+                                                                                                   }
+                                                                                                       ]
+                                                                                                         }
+                                                                                                         }

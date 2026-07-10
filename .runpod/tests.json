@@ -1,0 +1,17 @@
+{
+  "tests": [
+      {
+            "name": "basic_inference_test",
+                  "input": {
+                          "prompt": "Hello world",
+                                  "max_tokens": 50
+                                        },out": 30000
+                                            }
+                                              ],
+                                                "config": {
+                                                    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+                                                        "gpuCount": 1,
+                                                            "allowedCudaVersions": ["12.1", "12.2", "12.4"]
+                                                              }
+                                                              }
+                                              "time
