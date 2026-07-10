@@ -64,4 +64,10 @@ EXPOSE 8400 8401
 HEALTHCHECK --interval=30s --timeout=15s --start-period=90s --retries=3 \
     CMD curl -fsS http://localhost:8400/health || exit 1
 
-CMD ["python", "-u", "/handler.py"]
+RUN python3 -m pip install --no-cache-dir ".[gpu]" runpod
+
+VOLUME ["/models", "/data"]
+EXPOSE 8400
+
+# Change the command to execute your handler instead of the server
+CMD [ "python3", "-u", ".runpod/rp_handler.py" ]
