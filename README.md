@@ -1,5 +1,4 @@
 ```markdown
-[![Runpod](https://api.runpod.io/badge/drone1337llc-lgtm/MnemonicAi)](https://console.runpod.io/hub/drone1337llc-lgtm/MnemonicAi)
 # MnemonicAi — Consolidated Box
 
 A complete guide to installing, running, and maintaining your AI memory system.
