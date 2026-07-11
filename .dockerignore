@@ -1,6 +1,7 @@
 mnemonicai_venv/
 mnemonicai_data/
 models/
+cloud-models/
 .mn_install_state/
 .git/
 *.log
