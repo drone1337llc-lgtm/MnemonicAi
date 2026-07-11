@@ -78,7 +78,9 @@ jobs:
         run: |
           # Docker requires lowercase repository names; github.repository
           # preserves the repo's mixed case (MnemonicAi), so normalize it.
-          IMAGE="${{ env.REGISTRY }}/${IMAGE_NAME,,}:latest"
+          # The :latest tag only exists on the default branch (metadata-action
+          # gates it with is_default_branch); branch pushes get a branch tag.
+          IMAGE="${{ env.REGISTRY }}/${IMAGE_NAME,,}:${{ github.ref_name }}"
           docker pull "$IMAGE"
           timeout 30 docker run --rm -e MN_REPO=/app -p 8400:8400 "$IMAGE" \
             python start.py --host 0.0.0.0 --port 8400 --backend mock &
