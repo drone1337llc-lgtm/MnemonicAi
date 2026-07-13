@@ -17,9 +17,9 @@ manage billing, upload your codebase.
 |---|---|
 | Tenant isolation (`tenants.py`) | ✅ built + tested (auth, isolation, no key-leak, quotas) |
 | Web GUI (`webapp/index.html`) | ✅ built — 7 themes, sign-in, chat, per-user brain monitor, account/billing, support, upload-with-virus-warning; verified in preview |
-| Stripe billing | ⬜ UI done (portal buttons); needs live keys + webhook endpoint |
-| Upload + ClamAV virus scan | ⬜ UI + warning done; needs server-side scan wiring |
-| Dedicated Pro pod lifecycle | ⬜ RunPod spin-up/idle-stop orchestration |
+| Stripe billing | ✅ checkout/portal/webhook built + verified against test account; products created |
+| Upload + ClamAV virus scan | ✅ live on pod — clean stored, EICAR rejected (fails closed) |
+| Dedicated Pro pod lifecycle | ✅ podlife.py — create-on-signin + 30min idle stop |
 
 ## Files
 - `tenants.py` — tenant store: access-key→user, tier/quota, isolated paths.

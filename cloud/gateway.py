@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -62,7 +63,9 @@ def clamscan(path: str) -> tuple[bool, str]:
     """Scan a file with ClamAV. Returns (clean, detail). Fails CLOSED —
     if the scanner is unavailable the upload is rejected, never trusted."""
     try:
-        r = subprocess.run(["clamdscan", "--no-summary", path],
+        # --fdpass: the gateway (which owns the temp file) hands clamd the open
+        # descriptor, so clamd needn't have read perms on our 0600 temp file
+        r = subprocess.run(["clamdscan", "--fdpass", "--no-summary", path],
                            capture_output=True, text=True, timeout=120)
         if r.returncode == 0:
             return True, "clean"
@@ -213,7 +216,8 @@ class Handler(BaseHTTPRequestHandler):
             os.unlink(tmp_path)
             return self._send(422, {"error": "file rejected", "reason": detail})
         dest = os.path.join(store.uploads_dir(t), fname)
-        os.replace(tmp_path, dest)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.move(tmp_path, dest)  # /tmp and /workspace are different fs
         return self._send(200, {"stored": fname, "scan": "clean",
                                 "used_bytes": store.usage_bytes(t)})
 
