@@ -27,6 +27,8 @@ class MemoryChat:
     # ---- build the augmented prompt ----
     def build_messages(self, request_messages: List[Dict[str, str]]
                        ) -> Tuple[List[Dict[str, str]], List[MemoryItem]]:
+        import time as _t
+        self.last_user_ts = _t.time()  # curiosity engine yields to real traffic
         user_msgs = [m for m in request_messages if m.get("role") == "user"]
         last = user_msgs[-1]["content"] if user_msgs else ""
         if last:

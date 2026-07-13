@@ -1,5 +1,17 @@
 # MnemonicAI / Aerith — Changes
 
+## 2026-07-13 — v1.3.0 "Curiosity"
+- **Curiosity engine** (`mnemonicai/curiosity.py`): idle-time autonomy —
+  novelty seeking over distant memory pairs, hypothesis forming/testing,
+  associative-graph gap hunting, introspection over her own stats. Insights
+  scored by embedding information gain; high-gain thoughts stored as
+  memories with gain-scaled salience (intrinsic reward) and consolidated by
+  sleep-training. Yields to real traffic; emits monitor events.
+- **Public endpoint moved to the pod:** my.mnemonicai.org → cloudflared →
+  new `omni-proxy.service` (Omni Scale key validation) → `aerith-tunnel`
+  → pod MnemonicAI. `llama-omni` retired; GPU0 freed (~0.5GB residual).
+- `SYSTEM-CHEATSHEET.md` added: full system reference.
+
 ## 2026-07-13 — v1.2.0 "Cloud Brain"
 - **Aerith now hosted on RunPod** (A40 48GB): full MnemonicAI stack — memory,
   sleep-training bakes, embedding sidecar, brain monitor — runs pod-side next

@@ -103,6 +103,10 @@ def launch(cfg: AppConfig, open_browser: bool = True) -> int:
 
     trainer = SleepTrainer(mem, backend, bus, cfg)
     chat = MemoryChat(mem, backend, bus, trainer, cfg)
+    if getattr(cfg, "curiosity_enabled", True):
+        from .curiosity import CuriosityEngine
+        CuriosityEngine(mem, backend, bus, cfg, chat).start()
+        print("[mnemonicai] curiosity engine on: she wonders when idle")
     app = App(cfg, bus, chat, backend)
     httpd = serve(app)
 

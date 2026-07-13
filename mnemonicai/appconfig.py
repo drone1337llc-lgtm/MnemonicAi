@@ -50,6 +50,10 @@ class AppConfig:
     reflect_mode: str = "auto"     # test-time self-correction on non-streamed
                                    # replies: off | auto (substantive prompts
                                    # only, skips agent/tool traffic) | always
+    curiosity_enabled: bool = True  # idle-time exploration (novelty seeking,
+    curiosity_every_s: int = 900    # hypothesis testing, graph walks,
+    curiosity_idle_s: int = 180     # introspection) with information-gain
+    curiosity_gain_floor: float = 0.35  # scored intrinsic-reward memories
     load_in_4bit: bool = True
     max_new_tokens: int = 384
     max_new_tokens_cap: int = 8192  # hard ceiling on client-requested output

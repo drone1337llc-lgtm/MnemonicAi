@@ -26,8 +26,14 @@ code; a pre-cloud snapshot lives at `~/Documents/MnemonicAi-local-version`.
   committed; `config.json` is gitignored — copy `config.example.json`).
 - **Local fallback:** `sudo systemctl enable --now mnemonicai` with
   `"backend": "hybrid"` + local paths in `config.json`.
-- See `CHANGES.md` for the release log and `ARCHITECTURE-ROADMAP.md` for the
-  jack-of-all-trades sidecar plan.
+- **Public endpoint:** `https://my.mnemonicai.org/v1` — Cloudflare tunnel →
+  local `omni-proxy.service` (validates Omni Scale client keys) → SSH tunnel
+  → pod. systemd: `aerith-tunnel.service`, `omni-proxy.service`.
+- **Curiosity engine:** when idle, Aerith explores autonomously — novelty
+  seeking, hypothesis testing, knowledge-graph walks, introspection — scored
+  by information gain; novel insights become memories and feed sleep-training.
+- See `SYSTEM-CHEATSHEET.md` for the complete system reference, `CHANGES.md`
+  for the release log, and `ARCHITECTURE-ROADMAP.md` for the sidecar plan.
 
 ## Table of Contents
 
