@@ -41,3 +41,5 @@ Thumbs.db
 *~
 config.json
 config.json.bak*
+cloud/.env
+cloud/secrets/

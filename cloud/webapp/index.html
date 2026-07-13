@@ -246,14 +246,35 @@ function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:"s
 let PENDING_TIER="free";
 function openAuth(tier){ PENDING_TIER=tier||"free"; document.getElementById("authOverlay").classList.remove("hidden"); }
 function closeAuth(){ document.getElementById("authOverlay").classList.add("hidden"); }
-function fakeSignup(){ document.getElementById("authTitle").textContent="Create your instance"; document.getElementById("authSub").textContent="In production this runs Stripe checkout for the "+PENDING_TIER+" plan, then emails your access key."; }
+async function fakeSignup(){
+  const email=prompt("Enter your email to create an instance:");
+  if(!email) return;
+  const res=await api("/signup",{email,tier:PENDING_TIER});
+  if(!res.ok){ alert("Signup failed. Try again."); return; }
+  if(res.data.checkout_url){ location.href=res.data.checkout_url; return; }
+  document.getElementById("authKey").value=res.data.api_key;
+  document.getElementById("authSub").textContent="Instance created. Your access key is filled in below — save it, then press Enter.";
+}
+async function openPortal(){
+  const res=await api("/billing/portal",{},state.user.key);
+  if(res.ok && res.data.url){ location.href=res.data.url; }
+  else{ alert("Add a paid plan first to manage billing."); }
+}
 
 const state={ user:null };
-function doAuth(){
+async function api(path, body, key){
+  const h={"Content-Type":"application/json"};
+  if(key) h["Authorization"]="Bearer "+key;
+  const r=await fetch("/api"+path,{method:"POST",headers:h,body:JSON.stringify(body||{})});
+  return { ok:r.ok, status:r.status, data: await r.json().catch(()=>({})) };
+}
+async function doAuth(){
   const key=document.getElementById("authKey").value.trim();
   if(!key){ return; }
-  // DEMO: real build calls POST /auth {key} -> tenant record. Here we mock.
-  state.user={ name: key.slice(-6).toUpperCase(), tier: PENDING_TIER, key };
+  const res=await api("/auth",{key});
+  if(!res.ok){ document.getElementById("authSub").textContent="That key wasn't recognized. Check it and try again."; return; }
+  state.user={ name: res.data.name||key.slice(-6), tier: res.data.tier, key,
+               quota_gb: res.data.quota_gb, used: res.data.used_bytes||0 };
   closeAuth();
   document.getElementById("marketing").classList.add("hidden");
   document.querySelector("footer").classList.add("hidden");
@@ -291,10 +312,14 @@ function CHAT(){ return `
     </div>
   </div>`;
 }
-function sendMsg(){ const i=document.getElementById("chatIn"); const t=i.value.trim(); if(!t)return; const m=document.getElementById("msgs");
-  m.insertAdjacentHTML("beforeend",`<div class="msg u">${esc(t)}</div>`); i.value="";
-  setTimeout(()=>{ m.insertAdjacentHTML("beforeend",`<div class="msg a">(demo) Connected to your private instance, I'd answer here — and quietly file this away in your memory.</div>`); m.scrollTop=m.scrollHeight; },400);
-  m.scrollTop=m.scrollHeight;
+let CONV=[];
+async function sendMsg(){ const i=document.getElementById("chatIn"); const t=i.value.trim(); if(!t)return; const m=document.getElementById("msgs");
+  m.insertAdjacentHTML("beforeend",`<div class="msg u">${esc(t)}</div>`); i.value=""; m.scrollTop=m.scrollHeight;
+  CONV.push({role:"user",content:t});
+  const res=await api("/chat",{messages:CONV},state.user.key);
+  let reply="(couldn't reach your instance)";
+  if(res.ok){ reply=res.data?.choices?.[0]?.message?.content||reply; CONV.push({role:"assistant",content:reply}); }
+  m.insertAdjacentHTML("beforeend",`<div class="msg a">${esc(reply)}</div>`); m.scrollTop=m.scrollHeight;
 }
 function BRAIN(){ return `
   <h2>Your brain monitor</h2>
@@ -322,11 +347,13 @@ function FILES(){ return `
   <h2>My codebase</h2>
   <div class="subt">Upload your project so Aerith can reason over it and remember its structure.</div>
   <div class="notice" style="margin-bottom:18px"><span class="ic">⚠</span><span><b>Heads up:</b> all uploaded files are automatically scanned for viruses and malware before Aerith can access them. Don't upload secrets you wouldn't want stored in your private instance.</span></div>
-  <div class="drop" onclick="alert('Demo: opens file picker; real build streams to your instance with a ClamAV scan.')">
+  <div class="drop" onclick="document.getElementById('fileIn').click()">
+    <input type="file" id="fileIn" class="hidden" onchange="uploadFile(this.files[0])">
     <div style="font-size:30px">↑</div>
     <div style="margin-top:8px">Drop your project folder or <b style="color:var(--accent)">browse</b></div>
     <div style="font-size:13px;margin-top:4px">ZIP or folder · up to your plan limit</div>
   </div>
+  <div id="upStatus" class="muted" style="margin-top:10px;font-size:14px"></div>
   <div style="margin-top:20px">
     <div style="display:flex;justify-content:space-between;font-size:14px"><span class="muted">Storage used</span><span><b>1.2 GB</b> of 20 GB</span></div>
     <div class="bar"><i style="width:6%"></i></div>
@@ -339,7 +366,7 @@ function ACCOUNT(){ const u=state.user; const tierName=u.tier[0].toUpperCase()+u
   <div class="card" style="padding:22px;margin-bottom:18px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
       <div><div style="font-size:13px" class="muted">Current plan</div><div style="font-size:22px;font-weight:600">${tierName}</div></div>
-      <div style="display:flex;gap:10px"><button class="btn" onclick="alert('Demo: opens Stripe customer portal to change plan.')">Change plan</button><button class="btn" onclick="alert('Demo: opens Stripe portal to update card.')">Update payment</button></div>
+      <div style="display:flex;gap:10px"><button class="btn" onclick="openPortal()">Change plan</button><button class="btn" onclick="openPortal()">Update payment</button></div>
     </div>
   </div>
   <div class="card" style="padding:22px;margin-bottom:18px">
@@ -349,7 +376,7 @@ function ACCOUNT(){ const u=state.user; const tierName=u.tier[0].toUpperCase()+u
   <div class="card" style="padding:22px">
     <div style="font-size:15px;font-weight:500;margin-bottom:4px">Cancel subscription</div>
     <div class="muted" style="margin-bottom:14px">Your memories and data are retained for 30 days after cancellation, then permanently deleted.</div>
-    <button class="btn" style="border-color:var(--accent2)" onclick="if(confirm('Cancel your subscription? Your instance stays available until the end of the billing period.'))alert('Demo: cancels via Stripe; downgrades to Free at period end.')">Cancel subscription</button>
+    <button class="btn" style="border-color:var(--accent2)" onclick="if(confirm('Cancel your subscription? Your instance stays available until the end of the billing period.'))openPortal()">Cancel subscription</button>
   </div>`;
 }
 function SUPPORT(){ return `
@@ -367,6 +394,14 @@ function SUPPORT(){ return `
     <div class="field"><label>Message</label><textarea rows="4" placeholder="Describe your question or issue…"></textarea></div>
     <button class="btn btn-primary" style="margin-top:14px" onclick="alert('Demo: files a support ticket.')">Send message</button>
   </div>`;
+}
+async function uploadFile(f){
+  if(!f) return;
+  const s=document.getElementById("upStatus"); s.textContent="Scanning "+f.name+" for viruses…";
+  const r=await fetch("/api/upload",{method:"POST",headers:{"Authorization":"Bearer "+state.user.key,"X-Filename":f.name},body:f});
+  const d=await r.json().catch(()=>({}));
+  if(r.ok) s.textContent="✓ "+f.name+" scanned clean and stored.";
+  else s.textContent="✗ Rejected: "+(d.reason||d.error||"upload failed");
 }
 function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 </script>
