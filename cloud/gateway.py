@@ -39,6 +39,11 @@ EMBED_URL = os.environ.get("MNEM_EMBED_URL", "http://127.0.0.1:8404/v1")
 store = TenantStore(root=os.environ.get("MNEM_TENANTS", "/workspace/tenants"))
 stripe = Stripe()
 
+# Mission Control dashboard usage feed (best-effort; billing never depends on it)
+from mc_emitter import MCEmitter
+_env = stripe.env
+mc = MCEmitter(_env.get("MC_USAGE_URL", ""), _env.get("MC_BUSINESS_KEY", ""))
+
 # per-tenant isolated memory (lazy so the module imports even without the
 # mnemonicai package present, e.g. in a pure-billing deployment)
 _brains = None
@@ -182,6 +187,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = json.loads(r.read())
             reply = out.get("choices", [{}])[0].get("message", {}).get("content", "")
             brains().remember_reply(t.tenant_id, db, reply)  # perceive into their brain
+            toks = out.get("usage", {}).get("total_tokens", 0)
+            mc.usage(t.tenant_id, "chat", toks)  # dashboard feed (best-effort)
             return self._send(200, out, "application/json")
         except Exception as e:
             return self._send(502, {"error": f"engine error: {str(e)[:120]}"})
@@ -242,11 +249,16 @@ class Handler(BaseHTTPRequestHandler):
             tenant_id, tier = mapped
             store.set_tier(tenant_id, tier)
             cust = obj.get("customer")
+            email = ""
             if cust:
                 for tt in store._by_hash.values():
                     if tt.tenant_id == tenant_id:
                         tt.stripe_customer = cust
+                        email = tt.email
                 store._save()
+            # feed Mission Control's CRM (billing already applied above)
+            status = "canceled" if tier == "free" else "active"
+            mc.subscription(tenant_id, email, tier, status, cust or "")
         return self._send(200, {"received": True})
 
     def log_message(self, *a):
