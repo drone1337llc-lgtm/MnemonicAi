@@ -187,10 +187,58 @@ class MemoryChat:
     def publish_state(self) -> None:
         self.bus.publish(self.state_dict())
 
+    # ---- test-time compute: optional self-correction pass ----
+    def _reflect_worthwhile(self, msgs, draft: str) -> bool:
+        import re
+        last = next((m.get("content", "") for m in reversed(msgs)
+                     if m.get("role") == "user"), "")
+        if not isinstance(last, str):
+            return False
+        # agent/tool traffic must stay single-pass (latency contract)
+        if any(m.get("role") == "tool" or "tool_calls" in m for m in msgs):
+            return False
+        sys_txt = next((m.get("content", "") for m in msgs
+                        if m.get("role") == "system"), "")
+        if isinstance(sys_txt, str) and re.search(r"\btools?\b|function[_ ]call", sys_txt, re.I):
+            return False
+        if len(last) < 80 and len(draft) < 400:
+            return False  # chit-chat: don't double the latency
+        return bool(re.search(r"code|bug|calculat|math|prove|why|how|plan|step|"
+                              r"error|fix|logic|\d", last, re.I)) or len(draft) > 600
+
+    def _reflect(self, msgs, draft: str, max_new_tokens) -> str:
+        """Draft → self-critique → final. reflect_mode: off | auto | always."""
+        mode = getattr(self.cfg, "reflect_mode", "off")
+        if mode == "off" or not draft:
+            return draft
+        if mode == "auto" and not self._reflect_worthwhile(msgs, draft):
+            return draft
+        critique = msgs + [
+            {"role": "assistant", "content": draft},
+            {"role": "user", "content": (
+                "Review your previous answer for factual errors, logic "
+                "mistakes, bugs, or unmet requirements. If it is fully "
+                "correct, reply with exactly: OK. Otherwise reply with only "
+                "the corrected answer — the polished text a user should see, "
+                "with no analysis, no verdict, and no mention of this check.")}]
+        try:
+            revised = self.backend.generate(critique, max_new_tokens=max_new_tokens)
+        except Exception:
+            return draft
+        r = (revised or "").strip()
+        if not r or (len(r) < 20 and r.upper().replace(".", "").startswith("OK")):
+            self.bus.publish({"type": "reflect", "changed": False})
+            return draft
+        if len(r) < 0.3 * len(draft.strip()):
+            return draft  # suspiciously short revision — keep the draft
+        self.bus.publish({"type": "reflect", "changed": True})
+        return r
+
     # ---- the two entry points the server uses ----
     def complete(self, request_messages: List[Dict[str, str]], max_new_tokens=None) -> str:
         msgs, _ = self.build_messages(request_messages)
         reply = self.backend.generate(msgs, max_new_tokens=max_new_tokens)
+        reply = self._reflect(msgs, reply, max_new_tokens)
         self.after_reply(reply)
         return reply
 

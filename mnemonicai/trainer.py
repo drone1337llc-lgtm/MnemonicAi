@@ -115,7 +115,14 @@ class SleepTrainer:
 
         snap = self.backend.snapshot()
         pre = self.backend.eval_loss(eval_set) if eval_set else None
-        result = self.backend.train(train_set)
+        try:
+            result = self.backend.train(train_set)
+        except Exception as e:
+            # tell the monitor the bake died (otherwise the GUI just sees
+            # the GPU go idle with no explanation) and re-raise for the API
+            self.bus.publish({"type": "train", "phase": "error",
+                              "error": str(e)[:300]})
+            raise
         post = self.backend.eval_loss(eval_set) if eval_set else None
 
         rolled_back = False

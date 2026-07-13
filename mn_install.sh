@@ -268,12 +268,12 @@ ok "PCIe topology inspected"
 # 11/12  Model weights + install.py + train_check.py
 # ==============================================================
 hr "11/12  Model weights + project wiring"
-MODEL_DIR="$REPO_ROOT/models/ornith-1.0-9b"
-GGUF_DIR="$REPO_ROOT/models/ornith-1.0-9bgguf"
+MODEL_DIR="$REPO_ROOT/models/Aerith"
+GGUF_DIR="$REPO_ROOT/models/gguf"
 if [ -d "$MODEL_DIR" ] && [ -f "$MODEL_DIR/config.json" ]; then
   ok "raw HF weights at $MODEL_DIR"
 else
-  fail "model weights" "missing $MODEL_DIR — clone ornith-1.0-9b safetensors here"
+  fail "model weights" "missing $MODEL_DIR — place the Aerith safetensors here (current: /home/surge/Documents/mergekit/models/Aerith)"
 fi
 if ls "$MODEL_DIR"/*.safetensors >/dev/null 2>&1 || ls "$MODEL_DIR"/*.bin >/dev/null 2>&1; then
   ok "model weights files found in $MODEL_DIR"

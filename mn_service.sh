@@ -23,7 +23,7 @@ SERVICE=/etc/systemd/system/mn-watch.service
 _mn_log "writing $UNIT"
 sudo tee "$UNIT" >/dev/null <<EOF
 [Unit]
-Description=MnemonicAi — ornith-1.0-9b memory-native LLM
+Description=MnemonicAi — Aerith memory-native LLM
 After=network-online.target nvidia-persistenced.service
 Wants=network-online.target
 Requires=nvidia-persistenced.service

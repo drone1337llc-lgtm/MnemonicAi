@@ -386,15 +386,22 @@ const MAXDOTS=250;
 let REGION_COUNT={};
 function hashId(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0x7fffffff;return h||7;}
 function regionOf(m){ return REGIONS[kindRegion(m.kind)]; }
-function dotPos(id,reg){ const r=seeded(hashId(id)); const ang=r()*6.28, rad=(0.5+r()*0.5)*46;
+function dotPos(id,reg){ const r=seeded(hashId(id)); const ang=r()*6.28, rad=Math.sqrt(r())*46;
+  // sqrt() gives a uniform fill of the disc — crowded regions read as a tight
+  // swarm of individual dots instead of a dense ring melting into one blob
   return {x:reg.x+Math.cos(ang)*rad, y:reg.y+Math.sin(ang)*rad*0.8}; }
 function addMemory(m,ignite){
   if(MEM.memories.has(m.id)){ updateMemory(m); return; }
   if(MEM.memories.size>MAXDOTS){ let wk=null; for(const d of MEM.memories.values()) if(!wk||d.strength<wk.strength) wk=d; if(wk)MEM.memories.delete(wk.id); }
   const reg=regionOf(m); const pos=dotPos(m.id,reg);
+  // every dot gets its own orbit phase, speed, radius and twinkle rhythm so
+  // the swarm breathes organically instead of moving in lockstep
+  const rr=seeded(hashId(m.id)+99);
   const dot={id:m.id,kind:m.kind,strength:m.strength==null?1:m.strength,access:m.access||0,text:m.text||"",
     x:pos.x,y:pos.y,ox:pos.x-reg.x,oy:pos.y-reg.y,r:2,alpha:0,fading:false,pulse:0,pinned:!!m.pinned,
-    reg:kindRegion(m.kind),born:MEM.clock,binIdx:hashId(m.id)%64};
+    reg:kindRegion(m.kind),born:MEM.clock,binIdx:hashId(m.id)%64,
+    ph:rr()*6.28, spd:0.25+rr()*0.9, orb:1.5+rr()*4.5,
+    twPh:rr()*6.28, twSpd:0.6+rr()*1.6};
   MEM.memories.set(m.id,dot);
   if(!TLMEM.has(m.id)) TLMEM.set(m.id,{id:m.id,kind:m.kind,text:m.text||"",born:MEM.clock,
     rehits:[],died:null,jit:(hashId(m.id)%36-18)});
@@ -414,6 +421,28 @@ function spawnParticle(x0,y0,x1,y1,color){ MEM.particles.push({x0,y0,x1,y1,color
   cx:(x0+x1)/2+(Math.random()-0.5)*60, cy:(y0+y1)/2-30-Math.random()*40}); }
 function spawnWave(x,y,color,max){ MEM.waves.push({x,y,color,r:6,max:max||BOX.w*0.5,a:0.5}); }
 function spawnPulse(a,b,color){ MEM.pulses.push({a,b,color,t:0}); }
+/* ambient life: spontaneous synapse traffic so the brain shimmers with quiet
+   background thought even when idle — firing rate scales with how many
+   memories are alive and with music energy in reactive mode. */
+let nextFire=0;
+function ambientLife(){
+  const t=MEM.clock;
+  if(t<nextFire) return;
+  const pop=MEM.memories.size;
+  const energy=(REACTIVE&&analyser&&!SND.muted)?ENERGY:0;
+  nextFire=t+(0.9+Math.random()*2.2)/(1+Math.min(2,pop/60)+energy*2.5);
+  const pr=PATHS[Math.floor(Math.random()*PATHS.length)];
+  const A=REGIONS[pr[0]], B=REGIONS[pr[1]];
+  if(!A||!B) return;
+  const flip=Math.random()<0.5;
+  spawnPulse(flip?A:B, flip?B:A, (flip?A:B).color);
+  // sometimes a memory sparks in sympathy — a tiny flare in the swarm
+  if(pop&&Math.random()<0.55){
+    const arr=[...MEM.memories.values()];
+    const d=arr[Math.floor(Math.random()*arr.length)];
+    if(d&&!d.fading){ d.pulse=Math.max(d.pulse||0,0.8); }
+  }
+}
 
 /* ---------- events ---------- */
 let bakeActive=false, bakeGlow=0, bakeText="", activity=0;
@@ -504,6 +533,7 @@ function frame(now){
   viewBlend+=(vTarget-viewBlend)*0.065;
   if(Math.abs(viewBlend-vTarget)<0.005) viewBlend=vTarget;
   if(viewBlend<=0){                       // pure brain view
+    ambientLife();
     drawBrain(1); drawPaths(1); drawRegions(1); drawDots(); drawParticles(); drawWaves(); drawPulses();
   } else if(viewBlend>=1){                // pure graph view
     graphSync(); graphStep(); drawGraph(1); drawWaves(); drawPulses();
@@ -526,49 +556,66 @@ function drawRegions(fade){
   fade=(fade==null)?1:fade;
   if(fade<=0.02) return;
   ctx.save(); ctx.globalAlpha=fade;
-  for(const k in REGIONS){ const r=REGIONS[k]; const cnt=REGION_COUNT[k]||0;
-    const core=(8+Math.sqrt(cnt)*4.2)*(1+((REACTIVE&&analyser&&!SND.muted)?ENERGY*0.5:0));
+  let ri=0;
+  for(const k in REGIONS){ const r=REGIONS[k]; const cnt=REGION_COUNT[k]||0; ri++;
+    // the core stays a small beacon no matter how crowded — the POPULATION is
+    // shown by the swarm of individual dots, not by inflating one giant blob.
+    // Each region breathes on its own phase so the brain never moves in unison.
+    const breath=1+0.10*Math.sin(MEM.clock*(0.55+ri*0.13)+ri*2.1);
+    const core=(6+Math.min(8,Math.sqrt(cnt)*1.1))*breath
+               *(1+((REACTIVE&&analyser&&!SND.muted)?ENERGY*0.5:0));
     ctx.save();
     let g=ctx.createRadialGradient(r.x,r.y,0,r.x,r.y,core*3.4);
-    g.addColorStop(0,hexA2(r.color,0.5)); g.addColorStop(0.4,hexA2(r.color,0.12)); g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,hexA2(r.color,0.35)); g.addColorStop(0.4,hexA2(r.color,0.10)); g.addColorStop(1,"rgba(0,0,0,0)");
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(r.x,r.y,core*3.4,0,7); ctx.fill();
-    ctx.fillStyle=r.color; ctx.shadowColor=r.color; ctx.shadowBlur=18; ctx.globalAlpha=0.95;
+    ctx.fillStyle=r.color; ctx.shadowColor=r.color; ctx.shadowBlur=14; ctx.globalAlpha=0.8;
     ctx.beginPath(); ctx.arc(r.x,r.y,core,0,7); ctx.fill(); ctx.restore();
     ctx.fillStyle="rgba(220,230,255,0.7)"; ctx.font="10px 'IBM Plex Mono'"; ctx.textAlign="center";
-    ctx.fillText(r.label+(cnt?"  "+cnt:""), r.x, r.y+core+16);
+    ctx.fillText(r.label+(cnt?"  "+cnt:""), r.x, r.y+core+22);
   }
   ctx.restore();
 }
 function drawDots(){
-  // pass 1: fade/cleanup + dynamic position for every dot
+  // pass 1: fade/cleanup + living position for every dot. Each dot swims a
+  // slow private orbit around its home spot (own speed, phase and radius),
+  // so a crowded region reads as a shimmering swarm — never one blob, never
+  // a hundred dots marching in unison.
+  const t=MEM.clock;
   const groups={};
   for(const [id,d] of MEM.memories){
     const reg=REGIONS[d.reg]||REGIONS.hippo;
     const cnt=REGION_COUNT[d.reg]||1;
-    const spread=1+Math.min(2.2,Math.sqrt(cnt)*0.18);
+    const spread=1+Math.min(2.6,Math.sqrt(cnt)*0.20);
     if(d.ox==null){ d.ox=d.x-reg.x; d.oy=d.y-reg.y; }
-    d.x=reg.x+d.ox*spread; d.y=reg.y+d.oy*spread;
+    if(d.ph==null){ const rr=seeded(hashId(id)+99); d.ph=rr()*6.28; d.spd=0.25+rr()*0.9;
+      d.orb=1.5+rr()*4.5; d.twPh=rr()*6.28; d.twSpd=0.6+rr()*1.6; }
+    const wob=1+((REACTIVE&&analyser&&!SND.muted)?ENERGY*1.6:0)+(d.pulse||0)*1.5;
+    d.x=reg.x+d.ox*spread+Math.cos(t*d.spd+d.ph)*d.orb*wob;
+    d.y=reg.y+d.oy*spread+Math.sin(t*d.spd*0.83+d.ph*1.7)*d.orb*0.8*wob;
     if(d.fading){ d.alpha-=0.02; if(d.alpha<=0){ const tr=TLMEM.get(id); if(tr&&tr.died==null)tr.died=MEM.clock;
       MEM.memories.delete(id); continue; } }
     else d.alpha+=(1-d.alpha)*0.1;
     (groups[d.reg]=groups[d.reg]||[]).push(d);
   }
-  // pass 2: render only the strongest MAXSHOW per region — dots stay SMALL,
-  // the rest are represented by the region core size + count label.
-  const MAXSHOW=22;
+  // pass 2: render EVERY dot — individual, small, crisp. Crowding shrinks
+  // and dims each dot a little instead of hiding the overflow behind a
+  // giant region core, so tight groups stay visibly made of many dots.
   for(const key in groups){
     const arr=groups[key]; arr.sort((a,b)=>((b.pinned?2:0)+(b.strength||0))-((a.pinned?2:0)+(a.strength||0)));
-    const cnt=arr.length, crowd=1/Math.sqrt(1+0.22*Math.max(0,cnt-1));
-    const n=Math.min(arr.length,MAXSHOW);
-    for(let i=0;i<n;i++){
+    const cnt=arr.length, crowd=1/Math.sqrt(1+0.10*Math.max(0,cnt-1));
+    for(let i=0;i<arr.length;i++){
       const d=arr[i];
-      const rv=reactAmt(d.binIdx);
-      const targetR=(2+(d.strength||0)*4.5+(d.pulse||0)*3)*(0.75+0.25*crowd)*(1+rv*0.9);
+      // pulse by horizontal position: leftmost dots ride the 20Hz bass,
+      // rightmost the 20kHz sparkle (BANDS is log-spaced to match)
+      const bb=BRAINBOX||BOX;
+      const rv=reactAt((d.x-bb.x)/bb.w);
+      const tw=0.80+0.20*Math.sin(t*d.twSpd+d.twPh);      // private twinkle
+      const targetR=(1.6+(d.strength||0)*4.0+(d.pulse||0)*3)*(0.55+0.45*crowd)*(1+rv*0.9);
       d.r+=(targetR-d.r)*0.15;
       const col=KINDS[d.kind]||"#fff";
-      const a=clamp(d.alpha*(0.20+0.45*(d.strength||0))*crowd+(d.pulse||0)*0.25+rv*0.22,0,0.85);
+      const a=clamp((d.alpha*(0.30+0.50*(d.strength||0))*(0.45+0.55*crowd)+(d.pulse||0)*0.25+rv*0.22)*tw,0,0.95);
       ctx.save(); ctx.globalAlpha=a;
-      ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=4+(d.pulse||0)*10;
+      ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=(2+(d.pulse||0)*10)*crowd+rv*6;
       ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,7); ctx.fill(); ctx.restore();
       if(d.pinned){ ctx.save(); ctx.globalAlpha=clamp(d.alpha*0.9,0,1); ctx.strokeStyle="#ffcb52"; ctx.lineWidth=1.2; ctx.shadowColor="#ffcb52"; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(d.x,d.y,d.r+3,0,7); ctx.stroke(); ctx.restore(); }
       if(d.pulse)d.pulse*=0.92;
@@ -624,7 +671,32 @@ const MUSIC_REACTIVE=[["pulse.mp3","Giorgio Vitté — Pulse"],["stunts-cheer.mp
   ["get-this-work.mp3","kawauso — get this work"],["finallyfree.mp3","Out of Flux — finallyfree"],
   ["old-school.mp3","Yarin Primak — Going Back to the Old School"],
   ["groove-it-forward.mp3","Ziv Moran — Groove It Forward"],["make-me-sick.mp3","Zooki — Make Me Sick"]];
-let playlist=MUSIC_DEFAULT, trackIdx=0, musicOK=true;
+// Persistent shuffle: each mode owns a "bag" of track indices kept in
+// localStorage. Tracks pop off the bag one at a time, so the whole playlist
+// plays before anything repeats — across mode switches AND page reloads.
+// When the bag refills, the last-played track is barred from leading it,
+// so toggling reactive mode never greets you with the same opener twice.
+function _bagLoad(key,len){
+  let bag=[];
+  try{ bag=JSON.parse(localStorage.getItem(key)||"[]"); }catch(e){}
+  return Array.isArray(bag)?bag.filter(i=>Number.isInteger(i)&&i>=0&&i<len):[];
+}
+function _bagRefill(key,len){
+  const bag=[...Array(len).keys()];
+  for(let i=len-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [bag[i],bag[j]]=[bag[j],bag[i]]; }
+  let last=NaN; try{ last=parseInt(localStorage.getItem(key+":last"),10); }catch(e){}
+  if(len>1&&bag[0]===last) bag.push(bag.shift());
+  return bag;
+}
+let playlistSrc=MUSIC_DEFAULT, bagKey="mnMusic:default", musicOK=true;
+function nextTrack(){
+  let bag=_bagLoad(bagKey,playlistSrc.length);
+  if(!bag.length) bag=_bagRefill(bagKey,playlistSrc.length);
+  const idx=bag.shift();
+  try{ localStorage.setItem(bagKey,JSON.stringify(bag));
+       localStorage.setItem(bagKey+":last",String(idx)); }catch(e){}
+  return playlistSrc[idx];
+}
 function initAudio(){
   if(SND.ready) return; SND.ready=true;
   try{
@@ -632,7 +704,9 @@ function initAudio(){
     sfxGain=AC.createGain(); sfxGain.gain.value=0.16; sfxGain.connect(AC.destination);
     try{
       const src=AC.createMediaElementSource(musicEl);
-      analyser=AC.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.72;
+      // 4096-point FFT: ~12Hz per bin, enough resolution to tell 20Hz from
+      // 60Hz on the far left of the brain (256 gave one blurry 187Hz bin)
+      analyser=AC.createAnalyser(); analyser.fftSize=4096; analyser.smoothingTimeConstant=0.65;
       musicGain=AC.createGain(); musicGain.gain.value=0.34;
       src.connect(analyser); analyser.connect(musicGain); musicGain.connect(AC.destination);
       freqArr=new Uint8Array(analyser.frequencyBinCount);
@@ -643,12 +717,12 @@ function initAudio(){
 window.addEventListener("pointerdown",()=>initAudio(),{once:true});
 function startMusic(){
   if(!musicOK) return;
-  const [file,label]=playlist[trackIdx%playlist.length];
+  const [file,label]=nextTrack();
   musicEl.src="/assets/music/"+encodeURIComponent(file);
   $("trackName").textContent="♪ "+label;
   if(!SND.muted){ musicEl.play().catch(()=>{}); }
 }
-musicEl.addEventListener("ended",()=>{ trackIdx=(trackIdx+1)%playlist.length; startMusic(); });
+musicEl.addEventListener("ended",()=>{ startMusic(); });
 musicEl.addEventListener("error",()=>{ musicOK=false; $("trackName").textContent="(music files not found — run via start.py)"; });
 function setMuted(m){
   SND.muted=m;
@@ -658,18 +732,41 @@ function setMuted(m){
 function setReactive(on){
   REACTIVE=on;
   $("btnReactive").classList.toggle("on",on);
-  playlist=on?MUSIC_REACTIVE:MUSIC_DEFAULT; trackIdx=0;
+  playlistSrc=on?MUSIC_REACTIVE:MUSIC_DEFAULT;
+  bagKey="mnMusic:"+(on?"reactive":"default");
   if(SND.ready){ musicOK=true; startMusic(); }
 }
+const _bandsRaw=new Float32Array(64);
 function updateBands(){
   if(!analyser||!freqArr||SND.muted){ ENERGY*=0.94; for(let i=0;i<64;i++)BANDS[i]*=0.9; return; }
   analyser.getByteFrequencyData(freqArr);
   let sum=0;
-  for(let i=0;i<64;i++){ const v=freqArr[Math.floor(i*freqArr.length/96)]/255;
-    BANDS[i]=Math.max(v,BANDS[i]*0.86); sum+=v; }
+  // log-spaced bands: BANDS[0]≈20Hz … BANDS[63]≈20kHz, so screen-x maps
+  // straight onto the audible spectrum (leftmost dot = bass, rightmost = air).
+  // Each band AVERAGES every FFT bin in its slice instead of sampling one —
+  // single-bin sampling is what made neighboring dots flicker independently.
+  const nyq=(AC?AC.sampleRate:44100)/2, N=freqArr.length;
+  for(let i=0;i<64;i++){
+    const f0=20*Math.pow(1000,(i-0.5)/63), f1=20*Math.pow(1000,(i+0.5)/63);
+    const b0=Math.max(0,Math.floor(f0/nyq*N)), b1=Math.max(b0,Math.min(N-1,Math.ceil(f1/nyq*N)));
+    let acc=0; for(let b=b0;b<=b1;b++)acc+=freqArr[b];
+    let v=(acc/(b1-b0+1))/255;
+    v=Math.min(1,v*(0.7+(i/63)*1.1));   // tilt: music is bass-heavy, lift the treble side
+    _bandsRaw[i]=Math.max(v,BANDS[i]*0.84); sum+=v;
+  }
+  // neighbor smoothing: adjacent dots ride one wave instead of FFT noise
+  for(let i=0;i<64;i++){
+    const a=_bandsRaw[Math.max(0,i-1)], b=_bandsRaw[Math.min(63,i+1)];
+    BANDS[i]=_bandsRaw[i]*0.6+(a+b)*0.2;
+  }
   ENERGY=ENERGY*0.88+(sum/64)*0.12;
 }
 function reactAmt(bin){ return (REACTIVE&&analyser&&!SND.muted)?BANDS[(bin||0)%64]:0; }
+function reactAt(u){ // smooth spectrum sample: u=0 → 20Hz, u=1 → 20kHz
+  if(!(REACTIVE&&analyser&&!SND.muted)) return 0;
+  const p=clamp(u,0,1)*63, i=Math.floor(p), f=p-i;
+  return BANDS[i]*(1-f)+BANDS[Math.min(63,i+1)]*f;
+}
 /* --- tiny synthesized sound effects (no files needed) --- */
 const _sfxLast={};
 function _gap(kind,ms){ const n=performance.now(); if(_sfxLast[kind]&&n-_sfxLast[kind]<ms)return false; _sfxLast[kind]=n; return true; }
@@ -856,7 +953,7 @@ function explodeFromBrain(){
     n.vx=dx*s+(Math.random()-0.5)*3.5; n.vy=dy*s+(Math.random()-0.5)*3.5;
   }
 }
-function nodeR(n){ return Math.min(12, 3+(n.strength||0)*4.5+(n.pulse||0)*3)*(1+reactAmt(n.binIdx)*0.8); }
+function nodeR(n){ const rv=reactAt((n.x||0)/(W||1)); return Math.min(12, 3+(n.strength||0)*4.5+(n.pulse||0)*3)*(1+rv*0.8); }
 function drawGraph(fade){
   fade=(fade==null)?1:fade;
   const hov=GRAPH.hover||GRAPH.selected;

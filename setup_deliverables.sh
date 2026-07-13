@@ -32,8 +32,8 @@ metadata:
 data:
   config.json: |
     {
-      "model_path": "models/ornith-1.0-9b",
-      "gguf_path": "models/ornith-1.0-9bgguf/ornith-1.0-9b.Q4_K_M.gguf",
+      "model_path": "models/Aerith",
+      "gguf_path": "models/gguf/Aerith-Q4_K_M.gguf",
       "adapter_dir": "mnemonicai_data/adapter",
       "data_dir": "mnemonicai_data",
       "train_lr": 2e-4,

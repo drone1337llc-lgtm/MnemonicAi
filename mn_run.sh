@@ -54,7 +54,7 @@ fail() { log "FATAL: $*"; exit 1; }
 ensure_config() {
   [ -f "$REPO_ROOT/config.json" ] || {
     log "no config.json — running install.py"
-    "$VENV/bin/python" install.py --model "$REPO_ROOT/models/ornith-1.0-9b" || fail "install.py"
+    "$VENV/bin/python" install.py --model "$REPO_ROOT/models/Aerith" || fail "install.py"
   }
 }
 
@@ -169,8 +169,8 @@ cmd_stop() {
 
 cmd_train() {
   ensure_config
-  if [ ! -d "$REPO_ROOT/models/ornith-1.0-9b" ]; then
-    fail "no ornith-1.0-9b model dir at $REPO_ROOT/models/ornith-1.0-9b"
+  if [ ! -d "$REPO_ROOT/models/Aerith" ]; then
+    fail "no Aerith model dir at $REPO_ROOT/models/Aerith"
   fi
   if [ ! -f "$REPO_ROOT/dryrun_train.py" ]; then
     fail "no dryrun_train.py at $REPO_ROOT"

@@ -23,19 +23,79 @@ from .bridge import MemoryChat
 from .server import App, serve
 
 
+def _start_embed_server(cfg: AppConfig):
+    """Boot the semantic-embedding sidecar (llama-server, CPU — tiny model).
+
+    Returns (process, embedder) — embedder is None if unconfigured/unhealthy."""
+    from .embeddings import (HashingEmbedder, OpenAICompatibleEmbedder,
+                             ResilientEmbedder)
+    import subprocess
+    import urllib.request
+    gguf = getattr(cfg, "embed_gguf", "")
+    if not gguf or not os.path.isfile(gguf):
+        return None, None
+    exe = cfg.llama_server_exe or "llama-server"
+    port = getattr(cfg, "embed_port", 8404)
+    proc = subprocess.Popen(
+        [exe, "-m", gguf, "--host", "127.0.0.1", "--port", str(port),
+         "--embedding", "--pooling", "last", "-ngl", "0", "-c", "2048",
+         "--no-webui"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(30):
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2)
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        proc.terminate()
+        print("[mnemonicai] embedding sidecar failed to boot — hashing fallback")
+        return None, None
+    remote = OpenAICompatibleEmbedder(f"http://127.0.0.1:{port}/v1",
+                                      os.path.basename(gguf))
+    print(f"[mnemonicai] semantic memory embeddings on :{port} "
+          f"({os.path.basename(gguf)})")
+    return proc, ResilientEmbedder(remote, HashingEmbedder())
+
+
+def _migrate_embeddings(mem, embedder) -> None:
+    """Re-embed stored memories whose vectors don't match the active embedder
+    (e.g. first boot after switching from hashing to semantic vectors)."""
+    dim = len(embedder.embed(["probe"])[0])
+    stale = [m for st in (mem.semantic, mem.procedural, mem.episodic)
+             for m in st.all() if len(m.embedding or []) != dim]
+    if not stale:
+        return
+    print(f"[mnemonicai] re-embedding {len(stale)} memories "
+          f"for the new embedder …")
+    for i in range(0, len(stale), 32):
+        batch = stale[i:i + 32]
+        vecs = embedder.embed([m.content for m in batch])
+        for m, v in zip(batch, vecs):
+            m.embedding = v
+    print("[mnemonicai] re-embedding done")
+
+
 def launch(cfg: AppConfig, open_browser: bool = True) -> int:
     cfg.ensure_dirs()
     bus = EventBus()
     print(f"[mnemonicai] starting backend '{cfg.backend}' …")
     backend = build_backend(cfg)
 
-    mem = BrainMemory(Config(sleep_every_n_ticks=0), clock=time.time)
+    embed_proc, embedder = _start_embed_server(cfg)
+    mem = BrainMemory(Config(sleep_every_n_ticks=0), clock=time.time,
+                      embedder=embedder)
     if os.path.isfile(cfg.memory_db):
         try:
             mem.load(cfg.memory_db)
             print(f"[mnemonicai] loaded long-term memory from {cfg.memory_db}")
         except Exception as e:
             print(f"[mnemonicai] could not load memory: {e}")
+    if embedder is not None:
+        try:
+            _migrate_embeddings(mem, embedder)
+        except Exception as e:
+            print(f"[mnemonicai] embedding migration failed: {e}")
     try:
         backend.load_adapter(cfg.adapter_dir)
     except Exception:
@@ -53,6 +113,33 @@ def launch(cfg: AppConfig, open_browser: bool = True) -> int:
         except Exception as e:
             print(f"[mnemonicai] save failed: {e}")
     atexit.register(_save)
+    if embed_proc is not None:
+        atexit.register(lambda: embed_proc.terminate())
+
+    # atexit alone does NOT run on SIGTERM (what systemd sends on
+    # stop/restart), so every service restart silently dropped all
+    # memories accumulated since boot. Translate SIGTERM into a normal
+    # interpreter exit so _save actually runs.
+    import signal
+    import sys
+
+    def _on_sigterm(signum, frame):
+        sys.exit(0)
+    try:
+        signal.signal(signal.SIGTERM, _on_sigterm)
+    except (ValueError, OSError):
+        pass  # non-main thread or unsupported platform
+
+    # crash insurance: autosave every few minutes so even a hard kill
+    # (OOM, power loss) costs minutes of memories, not the whole session
+    def _autosave():
+        while True:
+            time.sleep(180.0)
+            try:
+                mem.save(cfg.memory_db)
+            except Exception:
+                pass
+    threading.Thread(target=_autosave, daemon=True).start()
 
     # periodic state heartbeat so the monitor shows live decay when idle
     def _heartbeat():
@@ -77,7 +164,7 @@ def launch(cfg: AppConfig, open_browser: bool = True) -> int:
     print(bar + "\n")
     if backend.name == "mock":
         print("  NOTE: MOCK backend (no GPU/model). Install GPU deps and set --model")
-        print("        to your ornith-1.0-9b weights for the real model.\n")
+        print("        to your Aerith weights for the real model.\n")
 
     if open_browser and cfg.host in ("127.0.0.1", "localhost"):
         threading.Timer(1.0, lambda: _try_open(url)).start()

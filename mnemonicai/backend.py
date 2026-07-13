@@ -2,7 +2,7 @@
 
 Two implementations behind one interface:
 
-* TransformersPeftBackend — the real thing. Loads ornith-1.0-9b (HF safetensors)
+* TransformersPeftBackend — the real thing. Loads the configured model (HF safetensors)
   in 4-bit QLoRA on an NVIDIA GPU, generates with a live LoRA adapter, and can
   fine-tune that same adapter on consolidated memories. Because inference and
   training share one in-process adapter, newly baked memories are immediately
@@ -80,7 +80,7 @@ class MockBackend:
             if snippet:
                 mem_hint = f" (drawing on memory: {snippet[:120]})"
         baked = f" [baked facts: {len(self._baked)}]" if self._baked else ""
-        return f"[mock ornith-1.0-9b v{self.adapter_version}] Re: “{last[:80]}”.{mem_hint}{baked}"
+        return f"[mock Aerith v{self.adapter_version}] Re: “{last[:80]}”.{mem_hint}{baked}"
 
     def generate_stream(self, messages, max_new_tokens=None) -> Iterator[str]:
         for w in self._reply(messages).split(" "):
@@ -145,7 +145,7 @@ class TransformersPeftBackend:
         if not resolved:
             raise RuntimeError(
                 f"Model weights not found at '{cfg.model_path}'. Point model_path at the "
-                f"ornith-1.0-9b folder (flat safetensors OR the HF cache with "
+                f"model folder (flat safetensors OR the HF cache with "
                 f"blobs/refs/snapshots — both are auto-resolved).")
         if resolved != cfg.model_path:
             print(f"[backend] resolved HF cache layout → {resolved}")
@@ -320,6 +320,8 @@ class RemoteOpenAIBackend:
         data = self._json.dumps(payload).encode() if payload is not None else None
         req = self._rq.Request(url, data=data, method="POST" if data else "GET")
         req.add_header("Content-Type", "application/json")
+        # RunPod's HTTPS proxy 403s the default Python-urllib user agent
+        req.add_header("User-Agent", "MnemonicAI/1.0")
         if self.key:
             req.add_header("Authorization", f"Bearer {self.key}")
         return req
@@ -642,7 +644,7 @@ def build_backend(cfg, log=print):
         return MockBackend(cfg)
     if not resolve_model_dir(cfg.model_path):
         log(f"[backend] model weights not found at '{cfg.model_path}' → "
-            "MockBackend (set model_path to your ornith-1.0-9b folder).")
+            "MockBackend (set model_path to your model folder, e.g. Aerith).")
         return MockBackend(cfg)
     log(f"[backend] CUDA + weights found → TransformersPeftBackend "
         f"({torch.cuda.get_device_name(0)}).")

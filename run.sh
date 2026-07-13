@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # MnemonicAi one-click launcher (macOS / Linux).
 # Installs dependencies (first run) then starts the server + live brain monitor.
-#   ./run.sh                 # real model (needs ./models/ornith-1.0-9b + NVIDIA)
+#   ./run.sh                 # real model (needs ./models/Aerith + NVIDIA)
 #   ./run.sh --mock          # try the UI with no GPU/model
 set -e
 cd "$(dirname "$0")"

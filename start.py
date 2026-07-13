@@ -3,7 +3,7 @@
 
     python3 start.py                      # self-hosted model + memory + live monitor
     python3 start.py --backend mock       # try the UI with no GPU/model
-    python3 start.py --model /path/to/ornith-1.0-9b --port 8400
+    python3 start.py --model /path/to/Aerith --port 8400
 
 Starts an OpenAI-compatible API and the live brain monitor. Point OpenClaw /
 Hermes / LM Studio / any client at http://127.0.0.1:8400/v1 and open

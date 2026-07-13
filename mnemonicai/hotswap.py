@@ -58,10 +58,20 @@ class EngineManager:
                 # still use the full window (Hermes sends 40k+ tokens)
                 "--kv-unified",
                 "--parallel", str(par),
-                # keep reasoning inline in `content` (parity with the
-                # transformers backend); MnemonicAI reads content only
-                "--reasoning-format", "none",
+                # split <think> blocks into reasoning_content so clients (and
+                # memory formation) only see the final answer — the RunPod
+                # training data taught a scaffold that restates the question
+                # and duplicates the answer inside <think>
+                "--reasoning-format", "deepseek",
                 "--alias", self.cfg.model_name]
+        tpl = getattr(self.cfg, "chat_template_file", "")
+        if tpl and os.path.isfile(tpl):
+            args += ["--chat-template-file", tpl]
+        draft = getattr(self.cfg, "draft_gguf", "")
+        if draft and os.path.isfile(draft):
+            # speculative decoding: the tiny draft proposes tokens, the big
+            # model verifies — identical output, substantially faster
+            args += ["-md", draft, "-ngld", "999"]
         if kv:
             # quantized KV cache halves context VRAM (needs flash attention)
             args += ["-fa", "on", "-ctk", kv, "-ctv", kv]
@@ -137,6 +147,56 @@ class EngineManager:
         except (OSError, ValueError):
             pass  # already gone
 
+    # ---- VRAM awareness ----
+    def _engine_vram(self, pid):
+        """(used_mib_by_pid, free_mib_on_its_gpu) or None if unknowable."""
+        try:
+            apps = subprocess.run(
+                ["nvidia-smi", "--query-compute-apps=pid,used_memory,gpu_uuid",
+                 "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=10).stdout
+            used = uuid = None
+            for line in apps.strip().splitlines():
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 3 and parts[0] == str(pid):
+                    used, uuid = int(parts[1]), parts[2]
+                    break
+            if used is None:
+                return None
+            gpus = subprocess.run(
+                ["nvidia-smi", "--query-gpu=memory.free,gpu_uuid",
+                 "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=10).stdout
+            for line in gpus.strip().splitlines():
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 2 and parts[1] == uuid:
+                    return used, int(parts[0])
+        except Exception:
+            pass
+        return None
+
+    def _fits_second_engine(self, old_pid) -> bool:
+        """Can a second engine boot beside the running one?
+
+        The new engine's footprint ~= the old one's (same model, ctx, KV).
+        When it can't fit, the standby aborts mid-warmup with a CUDA error
+        (ggml_abort in quantize_row/graph_compute) and the swap fails —
+        that, not any memory-count limit, is what kills bakes on a card
+        already >60% full. Unknown VRAM (no nvidia-smi, CPU build) keeps
+        the old blue/green behavior.
+        """
+        stats = self._engine_vram(old_pid) if old_pid else None
+        if stats is None:
+            return True
+        used, free = stats
+        return free >= used + 1024   # 1 GiB compute-buffer headroom
+
+    def _wait_dead(self, pid, timeout_s: float = 30.0) -> None:
+        deadline = time.time() + timeout_s
+        while time.time() < deadline and self._alive(pid):
+            time.sleep(0.5)
+        time.sleep(2.0)   # let the driver actually release the VRAM
+
     # ---- public ops ----
     def ensure_running(self) -> str:
         """Make sure the active engine is alive; boot one if not."""
@@ -171,24 +231,49 @@ class EngineManager:
             pass
 
     def swap_in(self, adapter_gguf: str, version: int) -> None:
-        """Blue/green swap: boot standby with adapter, flip, retire old."""
+        """Swap to a new adapter: blue/green when VRAM allows a second
+        engine, otherwise stop-then-start (seconds of downtime beats a
+        failed bake). On failure the previous engine is restored."""
         self._free_cuda_cache()
         st = self.state()
         old_port, old_pid = st.get("active_port"), st.get("pid")
+        old_adapter = st.get("adapter_gguf")
         new_port = PORTS[1] if old_port == PORTS[0] else PORTS[0]
+
+        stop_first = old_pid and not self._fits_second_engine(old_pid)
+        if stop_first:
+            print(f"[hotswap] not enough free VRAM for blue/green; "
+                  f"stop-start swap to v{version} (brief downtime)")
+            self._kill(old_pid)
+            self._wait_dead(old_pid)
+            old_pid = None   # already retired
+
         print(f"[hotswap] booting v{version} on :{new_port} "
               f"(adapter: {os.path.basename(adapter_gguf)})")
         proc = self._spawn(new_port, adapter_gguf)
         if not self._healthy(new_port):
             self._kill(proc.pid)
+            if stop_first:
+                # roll back: bring the previous engine back up
+                print(f"[hotswap] v{version} failed; restoring previous "
+                      f"engine on :{old_port}")
+                back = self._spawn(old_port, old_adapter)
+                if self._healthy(old_port):
+                    self._write_state({"active_port": old_port,
+                                       "pid": back.pid,
+                                       "adapter_gguf": old_adapter,
+                                       "adapter_version":
+                                           st.get("adapter_version", 0)})
             raise RuntimeError(
                 f"new engine v{version} failed health check on :{new_port}; "
-                f"keeping v{st.get('adapter_version', 0)} live")
+                f"keeping v{st.get('adapter_version', 0)} live "
+                f"(see engine_{new_port}.log)")
         self._write_state({"active_port": new_port, "pid": proc.pid,
                            "adapter_gguf": adapter_gguf,
                            "adapter_version": version})
-        print(f"[hotswap] flipped to v{version} on :{new_port}; retiring "
-              f":{old_port} in {GRACE_SECONDS}s")
+        print(f"[hotswap] flipped to v{version} on :{new_port}"
+              + (f"; retiring :{old_port} in {GRACE_SECONDS}s" if old_pid
+                 else " (stop-start swap complete)"))
         if old_pid:
             import threading
             threading.Timer(GRACE_SECONDS, self._kill, args=(old_pid,)).start()
@@ -206,15 +291,35 @@ class EngineManager:
         self._free_cuda_cache()
         st = self.state()
         old_port, old_pid = st.get("active_port"), st.get("pid")
+        old_adapter = st.get("adapter_gguf")
         new_port = PORTS[1] if old_port == PORTS[0] else PORTS[0]
         old_gguf = self.cfg.gguf_path
         self.cfg.gguf_path = gguf_path
+
+        stop_first = old_pid and not self._fits_second_engine(old_pid)
+        if stop_first:
+            print("[hotswap] not enough free VRAM for blue/green; "
+                  "stop-start base swap (brief downtime)")
+            self._kill(old_pid)
+            self._wait_dead(old_pid)
+            old_pid = None
+
         print(f"[hotswap] booting new base {os.path.basename(gguf_path)} "
               f"on :{new_port}")
         proc = self._spawn(new_port, adapter_gguf=None)
         if not self._healthy(new_port):
             self._kill(proc.pid)
             self.cfg.gguf_path = old_gguf
+            if stop_first:
+                print(f"[hotswap] new base failed; restoring previous "
+                      f"engine on :{old_port}")
+                back = self._spawn(old_port, old_adapter)
+                if self._healthy(old_port):
+                    self._write_state({"active_port": old_port,
+                                       "pid": back.pid,
+                                       "adapter_gguf": old_adapter,
+                                       "adapter_version":
+                                           st.get("adapter_version", 0)})
             raise RuntimeError(
                 f"new base model failed health check on :{new_port}; "
                 f"keeping {os.path.basename(old_gguf)} live "

@@ -60,6 +60,33 @@ class HashingEmbedder:
         return vec
 
 
+class ResilientEmbedder:
+    """Remote embedder with a local fallback.
+
+    Tries the primary (semantic) embedder; if it fails — server down,
+    timeout — falls back to the hashing embedder so memory operations never
+    crash. Fallback vectors have a different dimension, so they score 0
+    against semantic vectors (degraded recall, never wrong recall)."""
+
+    def __init__(self, primary, fallback) -> None:
+        self.primary = primary
+        self.fallback = fallback
+        self.model = getattr(primary, "model", "unknown")
+        self.degraded = False
+
+    def embed(self, texts: Sequence[str]) -> List[List[float]]:
+        try:
+            out = self.primary.embed(texts)
+            self.degraded = False
+            return out
+        except Exception:
+            if not self.degraded:
+                print("[embeddings] semantic embedder unavailable — "
+                      "falling back to hashing (recall degraded)")
+                self.degraded = True
+            return self.fallback.embed(texts)
+
+
 class OpenAICompatibleEmbedder:
     """Embedder backed by an OpenAI-compatible /embeddings endpoint."""
 
@@ -74,6 +101,7 @@ class OpenAICompatibleEmbedder:
         payload = json.dumps({"model": self.model, "input": list(texts)}).encode("utf-8")
         req = urllib.request.Request(self.base_url + "/embeddings", data=payload, method="POST")
         req.add_header("Content-Type", "application/json")
+        req.add_header("User-Agent", "MnemonicAI/1.0")
         if self.api_key:
             req.add_header("Authorization", "Bearer " + self.api_key)
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:

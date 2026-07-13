@@ -323,6 +323,31 @@ def make_handler(app: App):
                                 "adapter_version": 0,
                                 "note": "memory adapter reset; sleep-training "
                                         "rebuilds it on the new base"})
+                elif path == "/admin/apply-adapter":
+                    # Zero-downtime install of an ALREADY-CONVERTED adapter
+                    # GGUF (hybrid backend only) — for adapters trained
+                    # offline (e.g. an overnight standalone run) rather than
+                    # through this server's own sleep-training loop. Body:
+                    # {"adapter_gguf": "...", "version": optional int}
+                    if not hasattr(app.backend, "mgr"):
+                        self._json({"error": "adapter swapping needs the "
+                                    "hybrid backend (blue/green llama-server "
+                                    f"pair); current backend is "
+                                    f"'{app.backend.name}'"}, 409)
+                        return
+                    adapter_gguf = req.get("adapter_gguf", "")
+                    if not adapter_gguf or not os.path.isfile(adapter_gguf):
+                        self._json({"error": f"adapter_gguf not found: "
+                                    f"'{adapter_gguf}'"}, 400)
+                        return
+                    version = req.get("version")
+                    if version is None:
+                        version = app.backend.adapter_version + 1
+                    app.backend.mgr.swap_in(adapter_gguf, version)  # raises if unhealthy
+                    from .backend import _write_version
+                    _write_version(app.cfg.adapter_dir, version)
+                    self._json({"status": "swapped", "adapter_gguf": adapter_gguf,
+                                "adapter_version": version})
                 else:
                     self._json({"error": "not found", "path": path}, 404)
             except Exception as e:
