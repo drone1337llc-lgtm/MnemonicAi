@@ -34,6 +34,9 @@ WEBAPP = os.path.join(ROOT, "webapp")
 # tenant's OWN memory on top via TenantBrains, so the shared engine never
 # holds or mixes any user's memories.
 RAW_ENGINE = os.environ.get("MNEM_RAW_ENGINE", "http://127.0.0.1:8402/v1")
+RAW_ENGINE_KEY = os.environ.get("MNEM_RAW_ENGINE_KEY", "")  # keyed engines (omni vLLM)
+# default identity for engines that aren't identity-fine-tuned (e.g. raw omni)
+AERITH_IDENTITY = os.environ.get("MNEM_IDENTITY", "")
 EMBED_URL = os.environ.get("MNEM_EMBED_URL", "http://127.0.0.1:8404/v1")
 
 store = TenantStore(root=os.environ.get("MNEM_TENANTS", "/workspace/tenants"))
@@ -172,8 +175,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(401, {"error": "unauthorized"})
         d = self._json()
         db = store.memory_db(t)
+        req_msgs = d.get("messages", [])
+        # ensure Aerith identity for engines that don't have it trained in
+        if AERITH_IDENTITY and not any(m.get("role") == "system" for m in req_msgs):
+            req_msgs = [{"role": "system", "content": AERITH_IDENTITY}] + req_msgs
         # layer THIS tenant's private memory onto the prompt (isolated brain)
-        msgs = brains().augment(t.tenant_id, db, d.get("messages", []))
+        msgs = brains().augment(t.tenant_id, db, req_msgs)
         payload = json.dumps({
             "model": "Aerith", "messages": msgs,
             "max_tokens": min(int(d.get("max_tokens", 512)), 2048),
@@ -182,6 +189,8 @@ class Handler(BaseHTTPRequestHandler):
                                     data=payload, method="POST")
         req.add_header("Content-Type", "application/json")
         req.add_header("User-Agent", "MnemonicAI-Cloud/1.0")
+        if RAW_ENGINE_KEY:
+            req.add_header("Authorization", f"Bearer {RAW_ENGINE_KEY}")
         try:
             with urllib.request.urlopen(req, timeout=300) as r:
                 out = json.loads(r.read())
