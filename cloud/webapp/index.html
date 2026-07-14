@@ -297,6 +297,7 @@ footer{ border-top:1px solid var(--line); padding:34px 0; color:var(--muted); fo
       <a onclick="goHome();scrollToId('features')">Features</a>
       <a onclick="goHome();scrollToId('pricing')">Pricing</a>
       <a onclick="showDoc('benchmarks')">Benchmarks</a>
+      <a href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener">Open LLM Leaderboard ↗</a>
       <a onclick="showDoc('how')">How it's built</a>
     </div>
     <div class="col"><b>Company</b>
@@ -444,7 +445,8 @@ benchmarks:`<h1>Benchmarks</h1>
 <tr><td>HumanEval (code)</td><td>—</td><td>72.6</td><td>84.8</td><td>68.9</td></tr>
 </table>
 <p class="muted">Aria's ARC (69.0), HellaSwag (78.3), Winogrande (73.6) and TruthfulQA (49.6) are in the table above; "—" here just means we don't target that benchmark. Competitor numbers: Qwen team, <i>Qwen2.5-LLM</i> report.</p>
-<p><b>The honest read.</b> The instruct-tuned leaders are stronger at strict instruction-following and specialized math/code — exactly what they're heavily fine-tuned for. Aria holds her own on core reasoning (she edges out Gemma-2-9B on GSM8K and posts solid ARC/commonsense scores). She's a small, efficient model you can run affordably and privately — and her real edge isn't topping a leaderboard, it's <b>persistent memory</b> that makes her more useful to you over time. Compare any models yourself on the public <a href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener">Open LLM Leaderboard</a>.</p>`,
+<p><b>The honest read.</b> The instruct-tuned leaders are stronger at strict instruction-following and specialized math/code — exactly what they're heavily fine-tuned for. Aria holds her own on core reasoning (she edges out Gemma-2-9B on GSM8K and posts solid ARC/commonsense scores). She's a small, efficient model you can run affordably and privately — and her real edge isn't topping a leaderboard, it's <b>persistent memory</b> that makes her more useful to you over time. Compare any models yourself on the public <a href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener">Open LLM Leaderboard</a>.</p>
+<p style="margin-top:22px"><a class="btn" href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener" style="text-decoration:none">↗ View the live Open LLM Leaderboard</a></p>`,
 security:`<h1>Security &amp; data handling</h1>
 <ul>
 <li><b>Isolated by design.</b> Every user gets their own memory database. No request authenticated as one user can read another user's data — not even by asking Aria.</li>
