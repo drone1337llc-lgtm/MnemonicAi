@@ -339,3 +339,14 @@ suspects.
 q8_0) uses ~9-16GB depending on load; sleep-training temporarily adds a
 4-bit copy of the model. If boots fail, lower `engine_ctx` or
 `engine_parallel`.
+
+## Licensing & attribution
+
+Copyright © 2026 Sergio Williams ("Surge"). "MnemonicAI" and "Aria" are trademarks of Sergio Williams.
+
+- **Source code** — source-available, **non-commercial** (personal/educational/research). Commercial use needs a separate license. See [`LICENSE`](LICENSE).
+- **Aria model weights & original content** (docs, site copy, media) — **CC BY-NC 4.0**. See [`LICENSE-CONTENT`](LICENSE-CONTENT). Aria derives from open Qwen-family weights (Apache-2.0).
+- **Third-party components** (every model, library, dataset, font, service — with authors and licenses) — [`ATTRIBUTIONS.md`](ATTRIBUTIONS.md).
+- **Background music** — licensed via Artlist; per-track credits in [`assets/music/MUSIC-LICENSES.md`](assets/music/MUSIC-LICENSES.md).
+
+The live site's public Licenses, Privacy, Terms, Refunds, Security, and Contact pages mirror these. Commercial licensing / questions: support@mnemonicai.org.

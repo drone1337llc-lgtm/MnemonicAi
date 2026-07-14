@@ -122,8 +122,33 @@ header{ position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--
 .bar{ height:9px; background:var(--bg2); border-radius:6px; overflow:hidden; margin:8px 0; }
 .bar > i{ display:block; height:100%; background:var(--accent); }
 .support-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
-footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); font-size:14px; text-align:center; }
+footer{ border-top:1px solid var(--line); padding:34px 0; color:var(--muted); font-size:14px; }
 @media(max-width:820px){ .hero h1{ font-size:38px; } .app{ grid-template-columns:1fr; } .side{ flex-direction:row; overflow:auto; border-right:none; border-bottom:1px solid var(--line); } .side .who{ display:none; } }
+
+/* docs / legal hub */
+.docnav{ display:flex; flex-wrap:wrap; gap:6px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:26px; }
+.dtab{ font-size:14px; color:var(--muted); padding:7px 12px; border-radius:8px; cursor:pointer; }
+.dtab:hover{ background:var(--bg2); color:var(--text); }
+.dtab.active{ background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--text); }
+.doc{ font-size:15.5px; line-height:1.7; }
+.doc h1{ font-size:30px; font-weight:600; margin-bottom:6px; letter-spacing:-.01em; }
+.doc h3{ font-size:18px; font-weight:600; margin:26px 0 8px; }
+.doc p.lead{ font-size:18px; color:var(--muted); margin:8px 0 18px; }
+.doc p.muted{ color:var(--muted); font-size:14px; }
+.doc ul,.doc ol{ margin:10px 0 10px 22px; display:flex; flex-direction:column; gap:8px; }
+.doc a{ color:var(--accent); cursor:pointer; }
+.doc table{ width:100%; border-collapse:collapse; margin:14px 0; font-size:14.5px; display:block; overflow-x:auto; }
+.doc th,.doc td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.doc td:first-child{ white-space:normal; }
+.doc th{ color:var(--muted); font-weight:600; }
+.doc .back{ display:inline-block; margin-bottom:14px; color:var(--muted); font-size:14px; cursor:pointer; }
+/* rich footer */
+.foot{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:24px; }
+.foot .col b{ display:block; color:var(--text); font-size:14px; margin-bottom:10px; }
+.foot .col a{ display:block; color:var(--muted); font-size:14px; margin-bottom:7px; cursor:pointer; }
+.foot .col a:hover{ color:var(--accent); }
+.foot .bottom{ grid-column:1/-1; border-top:1px solid var(--line); padding-top:16px; margin-top:8px; color:var(--muted); font-size:13px; }
+@media(max-width:720px){ .foot{ grid-template-columns:1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -134,7 +159,8 @@ footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); fo
     <div class="spacer"></div>
     <a class="link" onclick="scrollToId('features')">Features</a>
     <a class="link" onclick="scrollToId('pricing')">Pricing</a>
-    <a class="link" onclick="show('support')">Support</a>
+    <a class="link" onclick="showDoc('how')">How it's built</a>
+    <a class="link" onclick="showDoc('contact')">Support</a>
     <div class="theme-pick" id="themePick"></div>
     <button class="btn btn-primary" id="signInBtn" onclick="openAuth()">Sign in</button>
   </div>
@@ -237,6 +263,15 @@ footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); fo
   </section>
 </main>
 
+<!-- ============ PUBLIC INFO / LEGAL HUB (no login) ============ -->
+<div id="docView" class="hidden">
+  <div class="wrap narrow" style="padding:44px 22px 64px">
+    <span class="back" onclick="goHome()">← Back to home</span>
+    <div class="docnav" id="docNav"></div>
+    <div id="docPane"></div>
+  </div>
+</div>
+
 <!-- ============ APP (logged in) ============ -->
 <div id="appView" class="hidden">
   <div class="app">
@@ -253,7 +288,31 @@ footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); fo
 </div>
 
 <footer>
-  <div class="wrap">© 2026 MnemonicAI · Aria is a private, memory-native assistant · <a onclick="show('support')" style="color:var(--accent)">Support</a></div>
+  <div class="wrap foot">
+    <div class="col">
+      <div class="logo" style="margin-bottom:10px"><span class="dot">◈</span> MnemonicAI</div>
+      <div class="muted" style="font-size:13.5px;max-width:34ch">A private, memory-native AI assistant. Aria remembers you — and it's yours alone.</div>
+    </div>
+    <div class="col"><b>Product</b>
+      <a onclick="goHome();scrollToId('features')">Features</a>
+      <a onclick="goHome();scrollToId('pricing')">Pricing</a>
+      <a onclick="showDoc('benchmarks')">Benchmarks</a>
+      <a onclick="showDoc('how')">How it's built</a>
+    </div>
+    <div class="col"><b>Company</b>
+      <a onclick="showDoc('about')">About</a>
+      <a onclick="showDoc('contact')">Contact &amp; support</a>
+      <a onclick="showDoc('security')">Security</a>
+      <a onclick="showDoc('faq')">FAQ</a>
+    </div>
+    <div class="col"><b>Legal</b>
+      <a onclick="showDoc('privacy')">Privacy</a>
+      <a onclick="showDoc('terms')">Terms</a>
+      <a onclick="showDoc('refunds')">Refunds &amp; cancellation</a>
+      <a onclick="showDoc('licenses')">Licenses &amp; copyright</a>
+    </div>
+    <div class="bottom">© 2026 Sergio Williams (Surge) · MnemonicAI &amp; Aria are trademarks of Sergio Williams · Code: source-available non-commercial · Model &amp; content: <a onclick="showDoc('licenses')" style="color:var(--accent)">CC BY-NC 4.0</a></div>
+  </div>
 </footer>
 
 <!-- auth modal -->
@@ -332,6 +391,164 @@ async function doAuth(){
 }
 function signOut(){ state.user=null; location.reload(); }
 function show(v){ if(!state.user){ openAuth(); return;} app(v); document.getElementById("appView").scrollIntoView(); }
+
+/* ---------- public info / legal hub (no login) ---------- */
+const DOCS_ORDER=[["about","About"],["how","How it's built"],["benchmarks","Benchmarks"],["security","Security & data"],["privacy","Privacy"],["terms","Terms"],["refunds","Refunds"],["licenses","Licenses"],["faq","FAQ"],["contact","Contact"]];
+function goHome(){ document.getElementById("docView").classList.add("hidden"); document.getElementById("appView").classList.add("hidden"); document.getElementById("marketing").classList.remove("hidden"); window.scrollTo(0,0); }
+function showDoc(name){ if(!DOCS[name]) name="about";
+  document.getElementById("marketing").classList.add("hidden");
+  document.getElementById("appView").classList.add("hidden");
+  document.querySelector("footer").classList.remove("hidden");
+  document.getElementById("docView").classList.remove("hidden");
+  document.getElementById("docNav").innerHTML=DOCS_ORDER.map(([k,l])=>`<span class="dtab${k===name?' active':''}" onclick="showDoc('${k}')">${l}</span>`).join("");
+  document.getElementById("docPane").innerHTML=`<div class="doc">${DOCS[name]}</div>`;
+  window.scrollTo(0,0);
+}
+const DOCS={
+about:`<h1>About MnemonicAI</h1>
+<p class="lead">Most AI forgets you the moment you close the tab. Aria doesn't.</p>
+<p>MnemonicAI is a private, memory-native AI assistant. Aria remembers what you tell her — your projects, your preferences, the way you think — and consolidates it into her own long-term memory, so every conversation builds on the last instead of starting from zero. Your memories live in an instance that is <b>yours alone</b>.</p>
+<h3>Who builds it</h3>
+<p>MnemonicAI is created and operated by <b>Sergio Williams</b> (who goes by <b>Surge</b>), an independent builder. Aria's model, her memory system, and this service were designed and trained by Surge from open-weight models and original engineering.</p>
+<h3>Built in the open — and with AI</h3>
+<p>In the spirit of transparency: MnemonicAI is built and operated with the help of AI agents — including Aria herself and AI coding assistants — working alongside a human. We think you deserve to know how the thing you're paying for was made. The <a onclick="showDoc('how')">How it's built</a> page documents every model, library, and dataset we stand on, and <a onclick="showDoc('licenses')">Licenses</a> covers how it's all licensed.</p>`,
+how:`<h1>How Aria is built</h1>
+<p class="lead">Full transparency on what Aria is made of. Nothing here is claimed as wholly original — she stands on excellent open work.</p>
+<ol>
+<li><b>Base.</b> Aria descends from open <b>Qwen</b>-family weights (Apache-2.0, by Alibaba's Qwen team).</li>
+<li><b>Merge &amp; train.</b> We merged and then trained her ourselves — model merging (mergekit), LoRA fine-tunes, continued pre-training on open corpora, and an identity/format-repair pass — with PyTorch and Hugging Face Transformers/PEFT.</li>
+<li><b>Serve.</b> She runs quantized via <b>llama.cpp</b>, with a Qwen3-Embedding sidecar for semantic memory recall and a Qwen3-TTS voice fine-tuned on a commercially-licensed (Apache-2.0) base.</li>
+<li><b>Remember.</b> A per-user memory system stores episodic and semantic memories, retrieves them by meaning, and — on paid tiers — consolidates them into the model's own weights while idle, a bit like sleep.</li>
+</ol>
+<p>The complete list of models, libraries, datasets, fonts, and services — each with its author and license — is on the <a onclick="showDoc('licenses')">Licenses</a> page. See <a onclick="showDoc('benchmarks')">Benchmarks</a> for how she measures up.</p>`,
+benchmarks:`<h1>Benchmarks</h1>
+<p class="lead">Aria's measured scores — with honest context.</p>
+<p>Aria is a compact (~9B-parameter) model. We evaluate her on the standard <b>EleutherAI lm-evaluation-harness</b> so anyone can reproduce the results. Her scores:</p>
+<table>
+<tr><th>Benchmark</th><th>Setup</th><th>Aria</th></tr>
+<tr><td>ARC-Challenge (science reasoning)</td><td>25-shot · acc_norm</td><td><b>69.0%</b></td></tr>
+<tr><td>GSM8K (grade-school math)</td><td>5-shot · strict</td><td><b>79.9%</b></td></tr>
+<tr><td>HellaSwag (commonsense)</td><td>10-shot · acc_norm</td><td><b>78.3%</b></td></tr>
+<tr><td>Winogrande (coreference)</td><td>5-shot</td><td><b>73.6%</b></td></tr>
+<tr><td>TruthfulQA (MC2)</td><td>0-shot</td><td><b>49.6%</b></td></tr>
+<tr><td>IFEval (instruction following)</td><td>0-shot · strict</td><td><b>54.2%</b></td></tr>
+</table>
+<h3>How to read this honestly</h3>
+<p>These land Aria squarely in the range of leading <b>open models in her size class</b> (7–9B) such as Llama-3.1-8B, Qwen2.5-7B and Gemma-2-9B. We deliberately <b>don't</b> print a head-to-head table against them: those models publish numbers under different evaluation settings, so a side-by-side would imply a precision that isn't real. Instead we publish our exact methodology above so ours are reproducible, and point you to the public <a href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener">Open LLM Leaderboard</a> to compare models yourself.</p>
+<p><b>What Aria is, and isn't.</b> She's a small, efficient model you can run affordably and privately. She is <i>not</i> trying to out-benchmark frontier models tens of times her size. Her real edge is <b>persistent memory</b> — getting more useful to you over time — not topping a leaderboard.</p>`,
+security:`<h1>Security &amp; data handling</h1>
+<ul>
+<li><b>Isolated by design.</b> Every user gets their own memory database. No request authenticated as one user can read another user's data — not even by asking Aria.</li>
+<li><b>Uploads are scanned.</b> Files you upload are virus/malware-scanned (ClamAV) before Aria can access them, and rejected if unsafe.</li>
+<li><b>Payments.</b> Card payments are handled by <b>Stripe</b>. We never see or store your full card details.</li>
+<li><b>Keys.</b> Your access key is your identity and privacy boundary; on our side it's stored only as a hash.</li>
+<li><b>Responsible disclosure.</b> Found a vulnerability? Email <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a> — we appreciate it and will respond.</li>
+</ul>`,
+privacy:`<h1>Privacy Policy</h1>
+<p class="muted">Effective 14 July 2026.</p>
+<p>MnemonicAI is built privacy-first. This explains what we collect and why.</p>
+<h3>What we collect</h3>
+<ul>
+<li><b>Account:</b> your email and an access key (stored hashed).</li>
+<li><b>Your content:</b> the messages you send Aria and any files you upload — kept in your isolated instance to power memory.</li>
+<li><b>Billing:</b> handled by Stripe; we receive subscription status, not your card number.</li>
+<li><b>Minimal operational logs</b> for reliability and abuse prevention.</li>
+</ul>
+<h3>How we use it</h3>
+<p>Only to provide the service — to let Aria remember your context and respond. We do <b>not</b> sell your data, and we do <b>not</b> use your private conversations to train models for other users.</p>
+<h3>Retention &amp; deletion</h3>
+<p>Your data lives as long as your account is active. After cancellation, your instance and memories are retained for 30 days, then permanently deleted. Request access to or deletion of your data anytime at <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a>.</p>
+<h3>Third parties</h3>
+<p>We rely on infrastructure providers (RunPod for compute, Cloudflare for delivery, Stripe for payments). See <a onclick="showDoc('how')">How it's built</a>.</p>`,
+terms:`<h1>Terms of Service</h1>
+<p class="muted">Effective 14 July 2026.</p>
+<p>By using MnemonicAI you agree to these terms.</p>
+<h3>The service</h3>
+<p>MnemonicAI provides an AI assistant ("Aria") with persistent memory. Features and availability may change as we improve the product.</p>
+<h3>Accounts</h3>
+<p>You're responsible for keeping your access key secret and for activity under your account.</p>
+<h3>Plans &amp; billing</h3>
+<p>The free trial requires no card. Paid plans (Starter, Pro) include a 15-day free trial; your card is charged on day 15 and monthly thereafter until cancelled. See <a onclick="showDoc('refunds')">Refunds &amp; cancellation</a>.</p>
+<h3>Acceptable use</h3>
+<p>Don't use MnemonicAI for anything illegal, harmful, or abusive; don't attempt to breach isolation or access others' data; don't upload content you don't have the right to. We may suspend accounts that violate this.</p>
+<h3>AI output disclaimer</h3>
+<p>Aria is an AI and can be wrong. Her output is not professional, legal, medical, or financial advice — verify anything important. You are responsible for how you use her responses.</p>
+<h3>Intellectual property</h3>
+<p>MnemonicAI, Aria, and the brand are owned by Sergio Williams. Your content remains yours. See <a onclick="showDoc('licenses')">Licenses</a>.</p>
+<h3>Warranty &amp; liability</h3>
+<p>The service is provided "as is", without warranties. To the maximum extent permitted by law, our total liability is limited to the amount you paid in the prior 12 months.</p>
+<h3>Changes</h3>
+<p>We may update these terms; material changes will be posted here.</p>`,
+refunds:`<h1>Refunds &amp; Cancellation</h1>
+<ul>
+<li><b>Free trial, no card.</b> Try MnemonicAI free for 14 days with no credit card.</li>
+<li><b>Paid trials.</b> Starter and Pro include a 15-day free trial — no charge until day 15. Cancel before then and you won't be billed.</li>
+<li><b>Cancel anytime.</b> Manage or cancel from <b>Account → Billing</b> (Stripe customer portal). You keep access until the end of the current billing period.</li>
+<li><b>Refunds.</b> Because a generous free trial lets you evaluate before paying, we generally don't refund partial months — but if something went wrong, email <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a> and we'll make it right.</li>
+<li><b>After cancellation.</b> Your data is retained for 30 days, then deleted.</li>
+</ul>`,
+licenses:`<h1>Licenses &amp; Copyright</h1>
+<p><b>Copyright © 2026 Sergio Williams ("Surge"). All rights reserved.</b></p>
+<h3>This project</h3>
+<ul>
+<li><b>Source code</b> — source-available for personal, educational, and research (non-commercial) use. Commercial use requires a separate license (contact us).</li>
+<li><b>Aria model weights &amp; original content</b> (docs, site copy, media) — <b>CC BY-NC 4.0</b> (attribution, non-commercial). Aria derives from open Qwen-family weights (Apache-2.0), whose terms continue to apply upstream.</li>
+<li><b>Trademarks</b> — "MnemonicAI" and "Aria" names and logos are not covered by the above licenses.</li>
+</ul>
+<h3>Music</h3>
+<p>All background music is licensed via <b>Artlist</b> under Song Certificates issued to the project owner, for use within MnemonicAI only. Credits:</p>
+<table>
+<tr><th>Track</th><th>Artist</th></tr>
+<tr><td>That's What It Was</td><td>Just for Kicks</td></tr>
+<tr><td>Desire</td><td>Borrtex</td></tr>
+<tr><td>Silent Transmission</td><td>Tamuz Dekel</td></tr>
+<tr><td>Pulse</td><td>Giorgio Vitté</td></tr>
+<tr><td>Stunts Cheer</td><td>Captain Joz</td></tr>
+<tr><td>get this work (Instrumental)</td><td>kawauso</td></tr>
+<tr><td>finallyfree</td><td>Out of Flux</td></tr>
+<tr><td>Going Back to the Old School (Instr.)</td><td>Yarin Primak</td></tr>
+<tr><td>Groove It Forward</td><td>Ziv Moran</td></tr>
+<tr><td>Make Me Sick</td><td>Zooki</td></tr>
+</table>
+<h3>What Aria is built on</h3>
+<table>
+<tr><th>Component</th><th>By</th><th>License</th></tr>
+<tr><td>Qwen (base, embedding, TTS, teacher)</td><td>Alibaba (Qwen Team)</td><td>Apache-2.0</td></tr>
+<tr><td>PyTorch</td><td>Meta / PyTorch Foundation</td><td>BSD-3</td></tr>
+<tr><td>Transformers · PEFT · Datasets · Accelerate · safetensors</td><td>Hugging Face</td><td>Apache-2.0</td></tr>
+<tr><td>llama.cpp</td><td>G. Gerganov &amp; contributors</td><td>MIT</td></tr>
+<tr><td>mergekit</td><td>Arcee AI</td><td>LGPL-3.0</td></tr>
+<tr><td>bitsandbytes</td><td>T. Dettmers &amp; contributors</td><td>MIT</td></tr>
+<tr><td>lm-evaluation-harness</td><td>EleutherAI</td><td>MIT</td></tr>
+<tr><td>FastAPI · Uvicorn · Starlette</td><td>S. Ramírez · Encode</td><td>MIT · BSD-3</td></tr>
+<tr><td>ClamAV (upload scanning)</td><td>Cisco</td><td>GPL-2.0 (external)</td></tr>
+<tr><td>Inter typeface</td><td>Rasmus Andersson</td><td>SIL OFL 1.1</td></tr>
+<tr><td>Training corpora</td><td>Wikipedia · RedPajama</td><td>CC BY-SA · open</td></tr>
+</table>
+<p class="muted">Think something is used without proper credit? Email <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a> and we'll fix it promptly.</p>`,
+faq:`<h1>FAQ</h1>
+<h3>What makes Aria different?</h3>
+<p>Memory. Aria remembers you across conversations and gets more useful over time, instead of resetting to zero.</p>
+<h3>Is my data private?</h3>
+<p>Yes — every user has an isolated memory instance, and we don't sell data or train shared models on your private chats. See <a onclick="showDoc('security')">Security</a> and <a onclick="showDoc('privacy')">Privacy</a>.</p>
+<h3>Do I need a credit card to try it?</h3>
+<p>No. The free trial needs only an email.</p>
+<h3>Can I cancel anytime?</h3>
+<p>Yes, from Account → Billing. See <a onclick="showDoc('refunds')">Refunds</a>.</p>
+<h3>Can Aria be wrong?</h3>
+<p>Yes — she's an AI. Verify anything important.</p>
+<h3>Can I run it myself?</h3>
+<p>The code is source-available for non-commercial use and the model is CC BY-NC 4.0. See <a onclick="showDoc('licenses')">Licenses</a>.</p>`,
+contact:`<h1>Contact &amp; support</h1>
+<p>We're a small operation and we read everything.</p>
+<ul>
+<li><b>Support &amp; general:</b> <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a></li>
+<li><b>Billing, privacy &amp; legal:</b> <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a></li>
+<li><b>Founder / operator:</b> Sergio Williams (Surge)</li>
+</ul>
+<p class="muted">Transparency note: MnemonicAI is built and operated by Sergio Williams with the help of AI agents (including Aria and AI coding assistants). Some support and operations are AI-assisted; a human reviews anything important.</p>
+<p>Service status: <a href="https://status.mnemonicai.org" target="_blank" rel="noopener">status.mnemonicai.org</a></p>`
+};
 
 function app(view){
   [...document.querySelectorAll(".side a")].forEach(a=>a.classList.toggle("active",a.dataset.view===view));

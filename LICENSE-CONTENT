@@ -1,0 +1,28 @@
+MnemonicAI — Content & Model License
+Copyright © 2026 Sergio Williams ("Surge").
+
+The following NON-CODE materials in this project are licensed to the public
+under the Creative Commons Attribution-NonCommercial 4.0 International license
+(CC BY-NC 4.0):
+
+  • the trained Aria model weights (as distributed by the copyright holder),
+  • documentation, README/guides, and website copy authored for this project,
+  • diagrams and other original media authored for this project.
+
+This does NOT cover: the source code (see LICENSE), third-party components
+(see ATTRIBUTIONS.md), or the licensed background music (see
+assets/music/MUSIC-LICENSES.md). The Aria weights are a derivative of open
+Qwen-family models (Apache-2.0); that upstream license continues to apply to the
+portions it covers.
+
+Under CC BY-NC 4.0 you may share and adapt these materials for NON-COMMERCIAL
+purposes, provided you give appropriate credit to "Sergio Williams (Surge) /
+MnemonicAI", link to this license, and indicate any changes. No additional
+restrictions.
+
+  Human-readable summary: https://creativecommons.org/licenses/by-nc/4.0/
+  Full legal code:        https://creativecommons.org/licenses/by-nc/4.0/legalcode
+
+For commercial use of the model or content, contact support@mnemonicai.org.
+
+THESE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.

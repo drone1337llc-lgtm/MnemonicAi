@@ -10,7 +10,7 @@ non-commercial) as of 2026-07-14. The previous XTTS server is preserved at
 
 ## Service
 - `aerith-voice.service` (systemd, CudaCuda) runs `tts_server.py` on **:8500**,
-  pinned to the 3090 via `CUDA_VISIBLE_DEVICES=1` (keeps the 4080 free).
+  on the 4080 via `CUDA_VISIBLE_DEVICES=0` (moved off the 3090 once rendering finished).
 - Runs under the `aerith_qwentts_venv` (has `qwen_tts`; the old `aerith_voice_venv`
   had Coqui TTS).
 - `POST /speak {"text":"..."}` -> `audio/wav` (24kHz) in Jessica's voice.
