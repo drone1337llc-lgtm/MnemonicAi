@@ -823,7 +823,9 @@ function connect(){
   try{ es=new EventSource("/events");
     es.onopen=()=>{opened=true; setBadge(true);};
     es.onmessage=ev=>{ try{onEvent(JSON.parse(ev.data));}catch(err){} };
-    es.onerror=()=>{ if(!opened){ try{es.close();}catch(e){} startSim(); } };
+    es.onerror=()=>{ setBadge(false); try{es.close();}catch(e){}
+      if(!opened){ startSim(); }
+      else { opened=false; setTimeout(connect,3000); } };  // dropped (tunnel/pod restart) -> reconnect
     setTimeout(()=>{ if(!opened){ try{es.close();}catch(e){} startSim(); } },2000);
   }catch(e){ startSim(); }
 }
