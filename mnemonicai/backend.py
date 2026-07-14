@@ -80,7 +80,7 @@ class MockBackend:
             if snippet:
                 mem_hint = f" (drawing on memory: {snippet[:120]})"
         baked = f" [baked facts: {len(self._baked)}]" if self._baked else ""
-        return f"[mock Aerith v{self.adapter_version}] Re: “{last[:80]}”.{mem_hint}{baked}"
+        return f"[mock Aria v{self.adapter_version}] Re: “{last[:80]}”.{mem_hint}{baked}"
 
     def generate_stream(self, messages, max_new_tokens=None) -> Iterator[str]:
         for w in self._reply(messages).split(" "):
@@ -644,7 +644,7 @@ def build_backend(cfg, log=print):
         return MockBackend(cfg)
     if not resolve_model_dir(cfg.model_path):
         log(f"[backend] model weights not found at '{cfg.model_path}' → "
-            "MockBackend (set model_path to your model folder, e.g. Aerith).")
+            "MockBackend (set model_path to your model folder, e.g. Aria).")
         return MockBackend(cfg)
     log(f"[backend] CUDA + weights found → TransformersPeftBackend "
         f"({torch.cuda.get_device_name(0)}).")

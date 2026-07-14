@@ -32,11 +32,19 @@ import time
 from dataclasses import dataclass, asdict, field
 from typing import Dict, Optional
 
+# tiers: trial = no credit card, time-limited taste; starter/pro = paid with a
+# 15-day free trial (no charge until day 15). admin/business are internal roles
+# with full access and no billing (business exists so Stripe reviewers can
+# exercise the whole product before enabling live payments).
 TIERS = {
-    "free":    {"quota_gb": 1,  "dedicated_pod": False, "price_id": None},
-    "starter": {"quota_gb": 5,  "dedicated_pod": False, "price_id": "price_starter"},
-    "pro":     {"quota_gb": 20, "dedicated_pod": True,  "price_id": "price_pro"},
+    "trial":    {"quota_gb": 1,  "dedicated_pod": False, "price_id": None, "trial_days": 14, "needs_card": False},
+    "starter":  {"quota_gb": 5,  "dedicated_pod": False, "price_id": "price_starter", "trial_days": 15, "needs_card": True},
+    "pro":      {"quota_gb": 20, "dedicated_pod": True,  "price_id": "price_pro",     "trial_days": 15, "needs_card": True},
+    "admin":    {"quota_gb": 100, "dedicated_pod": True, "price_id": None, "trial_days": 0, "needs_card": False},
+    "business": {"quota_gb": 100, "dedicated_pod": True, "price_id": None, "trial_days": 0, "needs_card": False},
+    "free":     {"quota_gb": 1,  "dedicated_pod": False, "price_id": None, "trial_days": 0, "needs_card": False},  # legacy
 }
+STRIPE_TRIAL_DAYS = 15  # paid tiers: no charge until day 15
 
 
 def _hash_key(key: str) -> str:
@@ -49,15 +57,32 @@ class Tenant:
     tenant_id: str
     key_hash: str
     email: str = ""
-    tier: str = "free"
+    tier: str = "trial"
+    role: str = "user"            # user | admin | business
     stripe_customer: str = ""
     created: float = field(default_factory=time.time)
     last_active: float = 0.0
     display_name: str = ""
+    trial_ends: float = 0.0       # unix ts; 0 = no expiry (paid/admin/business)
 
     @property
     def quota_bytes(self) -> int:
-        return TIERS.get(self.tier, TIERS["free"])["quota_gb"] * (1024 ** 3)
+        return TIERS.get(self.tier, TIERS["trial"])["quota_gb"] * (1024 ** 3)
+
+    @property
+    def active(self) -> bool:
+        # admin/business/paid never expire here; trial expires at trial_ends
+        if self.role in ("admin", "business"):
+            return True
+        if self.trial_ends and time.time() > self.trial_ends:
+            return False
+        return True
+
+    @property
+    def trial_days_left(self) -> int:
+        if not self.trial_ends:
+            return 0
+        return max(0, int((self.trial_ends - time.time()) / 86400 + 0.5))
 
     @property
     def dedicated(self) -> bool:
@@ -94,15 +119,22 @@ class TenantStore:
         os.replace(tmp, self.reg_path)
 
     # ---- lifecycle ----
-    def create(self, email: str = "", tier: str = "free",
-               display_name: str = "") -> tuple[str, Tenant]:
+    def create(self, email: str = "", tier: str = "trial",
+               display_name: str = "", role: str = "user") -> tuple[str, Tenant]:
         """Returns (raw_api_key, tenant). The raw key is shown to the user
         ONCE and never stored — only its hash is kept."""
         with self._lock:
             raw = "sk-mnem-" + secrets.token_hex(24)
             tid = "t_" + secrets.token_hex(8)
+            spec = TIERS.get(tier, TIERS["trial"])
+            # no-card trial gets a hard expiry; paid tiers expire via Stripe,
+            # admin/business never expire
+            trial_ends = 0.0
+            if tier == "trial" and spec.get("trial_days"):
+                trial_ends = time.time() + spec["trial_days"] * 86400
             t = Tenant(tenant_id=tid, key_hash=_hash_key(raw), email=email,
-                       tier=tier, display_name=display_name or email.split("@")[0])
+                       tier=tier, role=role, trial_ends=trial_ends,
+                       display_name=display_name or (email.split("@")[0] if email else tid))
             self._by_hash[t.key_hash] = t
             os.makedirs(self.tenant_dir(t), exist_ok=True)
             os.makedirs(os.path.join(self.tenant_dir(t), "uploads"), exist_ok=True)

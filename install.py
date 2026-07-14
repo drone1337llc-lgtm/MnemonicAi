@@ -6,7 +6,7 @@
     python3 install.py --model /path/to/Aerith   # set model weights path
 
 It is safe to re-run. It never downloads a model — point --model at your
-Aerith HF safetensors (or drop them in ./models/Aerith).
+Aria HF safetensors (or drop them in ./models/Aerith).
 """
 from __future__ import annotations
 
@@ -116,7 +116,7 @@ def main() -> int:
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--mock", action="store_true", help="skip GPU deps; mock backend")
-    ap.add_argument("--model", default=None, help="path to Aerith HF weights")
+    ap.add_argument("--model", default=None, help="path to Aria HF weights")
     ap.add_argument("--port", type=int, default=None)
     args = ap.parse_args()
 

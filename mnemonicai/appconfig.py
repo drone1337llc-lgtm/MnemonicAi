@@ -24,7 +24,7 @@ class AppConfig:
     port: int = 8400
 
     # ---- model ----
-    model_name: str = "Aerith"
+    model_name: str = "Aria"
     model_path: str = "./models/Aerith"          # HF safetensors dir (trainable)
     gguf_path: str = ""                            # optional GGUF (inference fallback)
     backend: str = "auto"          # auto | transformers | llamacpp | remote | mock
@@ -40,7 +40,7 @@ class AppConfig:
     engine_parallel: int = 2       # llama-server slots (each gets ctx/parallel)
     engine_kv_type: str = "q8_0"   # KV cache quantization ("" = f16)
     chat_template_file: str = ""   # override the GGUF's embedded chat template
-                                   # (Aerith's base GGUF ships a template that
+                                   # (Aria's base GGUF ships a template that
                                    # injects a foreign "Qwythos" identity)
     draft_gguf: str = ""           # small same-tokenizer draft model for
                                    # speculative decoding (free ~1.5-2x speed)

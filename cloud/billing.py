@@ -88,6 +88,8 @@ class Stripe:
             "metadata[tenant_id]": tenant_id,
             "metadata[tier]": tier,
             "subscription_data[metadata][tenant_id]": tenant_id,
+            # 15-day free trial: card captured now, first charge on day 15
+            "subscription_data[trial_period_days]": "15",
             "success_url": f"{base_url}/?checkout=success",
             "cancel_url": f"{base_url}/?checkout=cancel"})
 

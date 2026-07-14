@@ -1,6 +1,6 @@
 """Curiosity engine — intrinsic motivation for idle time.
 
-When no one is talking to Aerith, she explores her own memory: seeking
+When no one is talking to Aria, she explores her own memory: seeking
 novelty, forming and testing hypotheses, walking associative links for gaps,
 and inspecting her own statistics for weaknesses. Each exploration is scored
 by INFORMATION GAIN — how far the new thought lands from everything already
@@ -17,7 +17,7 @@ import time
 
 from .vectors import cosine
 
-_SYS = ("You are Aerith reflecting privately during idle time. Think freely "
+_SYS = ("You are Aria reflecting privately during idle time. Think freely "
         "but answer with ONE concise, concrete insight (2-5 sentences). No "
         "preamble, no meta-commentary.")
 
@@ -92,17 +92,22 @@ class CuriosityEngine(threading.Thread):
     # ---- one exploration ----
     def _cycle(self) -> None:
         mode = random.choice(MODES)
+        print(f"[curiosity] cycle start mode={mode} pool={len(self._pool())}", flush=True)
         built = self._build_prompt(mode)
         if not built or not built[0]:
+            print("[curiosity] no usable prompt this cycle", flush=True)
             return
         prompt, seeds = built
+        print(f"[curiosity] generating for prompt: {prompt[:80]!r}", flush=True)
         reply = self.backend.generate(
             [{"role": "system", "content": _SYS},
              {"role": "user", "content": prompt}], max_new_tokens=300)
         reply = (reply or "").strip()
+        print(f"[curiosity] reply len={len(reply)}", flush=True)
         if not reply:
             return
         gain = self._gain(reply)
+        print(f"[curiosity] gain={gain:.3f}", flush=True)
         self.recent.extend(m.id for m in seeds)
         self.bus.publish({"type": "curiosity", "mode": mode,
                           "gain": round(gain, 3),
@@ -123,9 +128,15 @@ class CuriosityEngine(threading.Thread):
             if not getattr(self.cfg, "curiosity_enabled", True):
                 continue
             last = getattr(self.chat, "last_user_ts", 0)
-            if time.time() - last < idle_gate:
+            idle_for = time.time() - last
+            if idle_for < idle_gate:
+                print(f"[curiosity] skip: only idle {idle_for:.0f}s "
+                      f"(need {idle_gate}s)", flush=True)
                 continue  # someone is talking to her — don't hog the engine
             try:
                 self._cycle()
             except Exception as e:
-                print(f"[curiosity] cycle failed (next interval retries): {e}")
+                import traceback
+                print(f"[curiosity] cycle failed (next interval retries): {e}",
+                      flush=True)
+                traceback.print_exc()

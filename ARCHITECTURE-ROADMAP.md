@@ -1,6 +1,6 @@
-# Aerith / MnemonicAI — Master Architecture Roadmap
+# Aria / MnemonicAI — Master Architecture Roadmap
 
-Goal: Aerith as a jack-of-all-trades system — while her weights stay small
+Goal: Aria as a jack-of-all-trades system — while her weights stay small
 enough for local hardware (RTX 3090 + 4080S). The design rule that makes this
 possible: **the 12B core owns language, reasoning, identity, and memory;
 every other modality is a sidecar organ the core orchestrates.** Nothing is
@@ -35,30 +35,30 @@ lost when one organ is off; each can be upgraded independently.
 ## Phase 2 — Ears and voice (speech-to-speech)
 - STT sidecar: whisper.cpp server (small.en or large-v3-turbo, CPU/GPU0).
 - TTS sidecar: Kokoro-82M (Apache) — warm, fast, local.
-- Bridge endpoint `/v1/audio/chat`: audio in → Aerith → audio out; monitor GUI
+- Bridge endpoint `/v1/audio/chat`: audio in → Aria → audio out; monitor GUI
   gets a mic button. Latency budget ~1.5s round trip.
 
 ## Phase 3 — Eyes (vision)
 - Qwen3.5-VL sidecar (9B, Apache) via llama.cpp mmproj on GPU0; bridge routes
-  image-bearing requests: VL describes/reads → Aerith reasons and answers
-  (keeps Aerith's memory + identity in the loop, zero retraining).
-- Later: graft a vision tower onto Aerith herself during a training cycle
+  image-bearing requests: VL describes/reads → Aria reasons and answers
+  (keeps Aria's memory + identity in the loop, zero retraining).
+- Later: graft a vision tower onto Aria herself during a training cycle
   (her Qwen3.5 lineage is natively multimodal — preprocessor configs exist).
 
 ## Phase 4 — Hands (computer use + search)
 - **High-accuracy search**: web search tool (SearXNG local or API) with
   embedding-sidecar reranking; results injected as context with citations;
   memory system stores what she learns.
-- **Computer use**: screenshot → VL sidecar → Aerith plans → executes via
+- **Computer use**: screenshot → VL sidecar → Aria plans → executes via
   existing tool-calling. Gate destructive actions behind confirmation.
 
 ## Phase 5 — Imagination (image/video generation)
 - ComfyUI or sd-server sidecar (FLUX-schnell / LTX-Video class, licenses
-  permitting) on the 4080S; Aerith writes the prompts, gallery in monitor GUI.
+  permitting) on the 4080S; Aria writes the prompts, gallery in monitor GUI.
 - These are generators she *uses*, not weights she carries.
 
 ## Sequencing rationale
 Phase 1 is pure software on the existing engine (days). Phases 2-3 are mature
 local sidecars (each a weekend). Phase 4 composes 1+3. Phase 5 is bolt-on.
 Every phase ships independently; none blocks the sleep-training loop, and the
-strict `Aerith` naming contract never changes.
+strict `Aria` naming contract never changes.

@@ -168,7 +168,7 @@ def launch(cfg: AppConfig, open_browser: bool = True) -> int:
     print(bar + "\n")
     if backend.name == "mock":
         print("  NOTE: MOCK backend (no GPU/model). Install GPU deps and set --model")
-        print("        to your Aerith weights for the real model.\n")
+        print("        to your Aria weights for the real model.\n")
 
     if open_browser and cfg.host in ("127.0.0.1", "localhost"):
         threading.Timer(1.0, lambda: _try_open(url)).start()

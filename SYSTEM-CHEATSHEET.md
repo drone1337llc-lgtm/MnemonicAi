@@ -1,8 +1,8 @@
-# Aerith / MnemonicAI — Complete System Cheat Sheet
+# Aria / MnemonicAI — Complete System Cheat Sheet
 *Everything the system is, where it lives, and how it got here. (2026-07-13)*
 
-## 1. What Aerith is
-- **Model:** Aerith — 9B hybrid linear-attention LLM (Qwen3.5-9B descendant),
+## 1. What Aria is
+- **Model:** Aria — 9B hybrid linear-attention LLM (Qwen3.5-9B descendant),
   ~120 tok/s decode at Q4, 131,072-token context. Identity: *created by
   Sergio Williams (Surge)* — trained in, template-enforced.
 - **Version lineage** (`AERITH_VERSION.json` is the only place versions live;
@@ -19,9 +19,9 @@
 - **Fixed paths:** HF weights `~/Documents/mergekit/models/Aerith/` (backup
   `Aerith-previous/`); quants `~/Documents/MnemonicAi/models/gguf/
   Aerith-Q8_0.gguf`, `Aerith-Q4_K_M.gguf`, `Aerith-f16.gguf` (backups
-  `*.gguf.prev`). Model id on every endpoint: **`Aerith`**.
+  `*.gguf.prev`). Model id on every endpoint: **`Aria`**.
 
-## 2. Where Aerith runs (cloud, since 2026-07-13)
+## 2. Where Aria runs (cloud, since 2026-07-13)
 RunPod A40 48GB pod `mj830tdtoaxntg` (~$0.44/hr) serves **raw f16** with the
 full MnemonicAI stack pod-side. Local GPUs are free.
 
@@ -74,9 +74,9 @@ my.mnemonicai.org ─► cloudflared ─► omni-proxy   ├─ llama-server eng
 | GUI + memory-augmented API | `http://localhost:8400` (`/v1`) | none (tunnel-only) |
 | Public API (Omni Scale) | `https://my.mnemonicai.org/v1` | Omni client key |
 | Embeddings sidecar (pod-internal) | `:8404/v1/embeddings` | none |
-| Model id everywhere | `Aerith` | — |
+| Model id everywhere | `Aria` | — |
 OpenClaw / Hermes / OpenHands: OpenAI-compatible provider, base URL above,
-model `Aerith`. Note: scripts hitting the RunPod proxy must send a custom
+model `Aria`. Note: scripts hitting the RunPod proxy must send a custom
 User-Agent (Python-urllib default gets 403 from RunPod's edge).
 
 ## 5. Training / build pipelines (`~/Documents/runpod-training/`)

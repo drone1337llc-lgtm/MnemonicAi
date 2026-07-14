@@ -36,7 +36,7 @@ WEBAPP = os.path.join(ROOT, "webapp")
 RAW_ENGINE = os.environ.get("MNEM_RAW_ENGINE", "http://127.0.0.1:8402/v1")
 RAW_ENGINE_KEY = os.environ.get("MNEM_RAW_ENGINE_KEY", "")  # keyed engines (omni vLLM)
 # default identity for engines that aren't identity-fine-tuned (e.g. raw omni)
-AERITH_IDENTITY = os.environ.get("MNEM_IDENTITY", "")
+ARIA_IDENTITY = os.environ.get("MNEM_IDENTITY", "")
 EMBED_URL = os.environ.get("MNEM_EMBED_URL", "http://127.0.0.1:8404/v1")
 
 store = TenantStore(root=os.environ.get("MNEM_TENANTS", "/workspace/tenants"))
@@ -147,27 +147,37 @@ class Handler(BaseHTTPRequestHandler):
     def _signup(self):
         d = self._json()
         email = d.get("email", "").strip()
-        tier = d.get("tier", "free")
-        if tier not in TIERS:
-            return self._send(400, {"error": "unknown tier"})
-        raw, t = store.create(email=email, tier="free")  # start free until paid
-        resp = {"tenant_id": t.tenant_id, "api_key": raw, "tier": t.tier}
-        if tier in ("starter", "pro"):
-            price = stripe.env.get(f"STRIPE_PRICE_{tier.upper()}", "")
-            base = f"https://{self.headers.get('Host','www.mnemonicai.org')}"
-            sess = stripe.checkout(tier, price, email, t.tenant_id, base)
-            resp["checkout_url"] = sess.get("url", "")
-        return self._send(200, resp)
+        tier = d.get("tier", "trial")
+        if tier not in ("trial", "starter", "pro"):  # public signup tiers only
+            return self._send(400, {"error": "unknown plan"})
+        if tier == "trial":
+            # no credit card — instant, time-limited taste of the product
+            raw, t = store.create(email=email, tier="trial")
+            return self._send(200, {"tenant_id": t.tenant_id, "api_key": raw,
+                                    "tier": "trial", "trial_days_left": t.trial_days_left,
+                                    "message": "Your free trial is live — no card needed."})
+        # paid: create as trial-on-that-tier, Stripe collects card + 15-day free trial
+        raw, t = store.create(email=email, tier=tier)
+        price = stripe.env.get(f"STRIPE_PRICE_{tier.upper()}", "")
+        base = f"https://{self.headers.get('Host','www.mnemonicai.org')}"
+        sess = stripe.checkout(tier, price, email, t.tenant_id, base)
+        return self._send(200, {"tenant_id": t.tenant_id, "api_key": raw,
+                                "tier": tier, "checkout_url": sess.get("url", "")})
 
     def _auth(self):
         t = store.authenticate(self._json().get("key", ""))
         if not t:
             return self._send(401, {"error": "invalid key"})
+        if not t.active:
+            return self._send(402, {"error": "trial_expired",
+                                    "message": "Your free trial has ended. Upgrade to keep Aria."})
         return self._send(200, {"tenant_id": t.tenant_id, "tier": t.tier,
-                                "name": t.display_name,
+                                "role": t.role, "name": t.display_name,
                                 "quota_gb": t.quota_bytes // 1024**3,
                                 "used_bytes": store.usage_bytes(t),
-                                "dedicated": t.dedicated})
+                                "dedicated": t.dedicated,
+                                "trial_days_left": t.trial_days_left,
+                                "is_admin": t.role == "admin"})
 
     def _chat(self):
         t = self._tenant()
@@ -176,13 +186,13 @@ class Handler(BaseHTTPRequestHandler):
         d = self._json()
         db = store.memory_db(t)
         req_msgs = d.get("messages", [])
-        # ensure Aerith identity for engines that don't have it trained in
-        if AERITH_IDENTITY and not any(m.get("role") == "system" for m in req_msgs):
-            req_msgs = [{"role": "system", "content": AERITH_IDENTITY}] + req_msgs
+        # ensure Aria identity for engines that don't have it trained in
+        if ARIA_IDENTITY and not any(m.get("role") == "system" for m in req_msgs):
+            req_msgs = [{"role": "system", "content": ARIA_IDENTITY}] + req_msgs
         # layer THIS tenant's private memory onto the prompt (isolated brain)
         msgs = brains().augment(t.tenant_id, db, req_msgs)
         payload = json.dumps({
-            "model": "Aerith", "messages": msgs,
+            "model": "Aria", "messages": msgs,
             "max_tokens": min(int(d.get("max_tokens", 512)), 2048),
         }).encode()
         req = urllib.request.Request(f"{RAW_ENGINE}/chat/completions",
@@ -194,7 +204,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             with urllib.request.urlopen(req, timeout=300) as r:
                 out = json.loads(r.read())
+            # brand: the model's identity is trained-in as "Aerith"; until a
+            # proper identity retrain to "Aria", present as Aria everywhere the
+            # user sees (model label + any stray self-reference in the text).
+            out["model"] = "Aria"
             reply = out.get("choices", [{}])[0].get("message", {}).get("content", "")
+            if "Aerith" in reply:
+                reply = reply.replace("Aerith", "Aria")
+                out["choices"][0]["message"]["content"] = reply
             brains().remember_reply(t.tenant_id, db, reply)  # perceive into their brain
             toks = out.get("usage", {}).get("total_tokens", 0)
             mc.usage(t.tenant_id, "chat", toks)  # dashboard feed (best-effort)

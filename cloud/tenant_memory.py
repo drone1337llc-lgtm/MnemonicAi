@@ -4,7 +4,7 @@ The shared pod runs ONE raw LLM engine (fast, GPU-bound), but each tenant
 gets their own BrainMemory loaded from their own isolated memory.db. This
 manager holds an LRU set of active tenant brains, persisting + evicting the
 cold ones. A tenant's chat only ever perceives/recalls against their own
-brain, so no cross-tenant leakage is possible — Aerith literally cannot see
+brain, so no cross-tenant leakage is possible — Aria literally cannot see
 another user's memories because they aren't loaded in that request's context.
 
 Sits in the gateway. Uses the shipped mnemonicai package for the brain.

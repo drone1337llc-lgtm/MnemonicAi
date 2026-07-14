@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MnemonicAI — Aerith, the AI that remembers you</title>
+<title>MnemonicAI — Aria, the AI that remembers you</title>
 <style>
 :root{
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -52,6 +52,17 @@ header{ position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--
 .hero h1 .grad{ background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
 .hero p.sub{ font-size:19px; color:var(--muted); max-width:56ch; margin-top:20px; }
 .hero .cta{ display:flex; gap:12px; margin-top:30px; flex-wrap:wrap; }
+.hero h1{ font-size:52px; line-height:1.1; }
+.eyebrow{ display:inline-block; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); padding:6px 14px; border-radius:20px; margin-bottom:22px; }
+.trustline{ margin-top:16px; font-size:14px; color:var(--muted); }
+.wrap.narrow{ max-width:760px; }
+.section.problem, .section.why{ background:var(--bg2); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.section .lead{ text-align:left; }
+.problem h2, .why h2{ text-align:left; font-size:30px; }
+.whygrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-top:26px; }
+.whyitem{ padding:20px 22px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-size:15.5px; color:var(--muted); line-height:1.6; }
+.whyitem b{ color:var(--text); }
+.trialnote{ font-size:13px; color:var(--accent2); margin:0 0 10px; font-weight:500; }
 .brainviz{ margin-top:8px; }
 .grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px; margin-top:56px; }
 .feat{ padding:22px; }
@@ -133,70 +144,95 @@ footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); fo
 <main id="marketing">
   <section class="hero">
     <div class="wrap">
-      <h1>The AI that <span class="grad">actually remembers</span> you.</h1>
-      <p class="sub">Meet Aerith — a private, memory-native assistant. She learns your world, keeps it yours, and forgets nothing that matters. Your data lives in your own isolated instance, never mixed with anyone else's.</p>
+      <div class="eyebrow">Memory-native AI · private by design</div>
+      <h1>Most AI forgets you the moment you close the tab.<br><span class="grad">Aria doesn't.</span></h1>
+      <p class="sub">She remembers what you tell her — your projects, your preferences, the way you think — and gets more useful every time you talk. Private to you, always. Meet the assistant that actually grows with you.</p>
       <div class="cta">
-        <button class="btn btn-primary" onclick="openAuth()">Get your instance</button>
-        <button class="btn btn-ghost" onclick="scrollToId('features')">See how it works</button>
+        <button class="btn btn-primary" onclick="startSignup('trial')">Try free — no card needed</button>
+        <button class="btn btn-ghost" onclick="scrollToId('how')">See how it works</button>
       </div>
+      <div class="trustline">14-day free trial · no credit card · your data stays yours</div>
     </div>
   </section>
 
-  <section class="wrap" id="features">
+  <section class="section problem"><div class="wrap narrow">
+    <h2>You've felt it. Every chat starts from zero.</h2>
+    <p class="lead">You explain your project, your stack, your preferences — again. The AI nods, helps once, and forgets it all by tomorrow. It's like working with a brilliant colleague who has amnesia.</p>
+    <p class="lead" style="margin-top:14px">Aria was built the opposite way. Everything you share becomes part of a memory that's <b>yours alone</b> — consolidated while she rests, the way a person holds on to what matters. The tenth conversation is better than the first. The hundredth feels like she's known you for years.</p>
+  </div></section>
+
+  <section class="wrap" id="how">
+    <h2 style="text-align:center;font-size:30px;font-weight:600">What makes her different</h2>
+    <p class="lead" style="text-align:center;margin-bottom:36px">Six things no ordinary chatbot can do.</p>
     <div class="grid3">
-      <div class="feat card"><div class="ic">◈</div><h3>Persistent memory</h3><p>Aerith consolidates what you tell her into long-term memory and bakes it into her own weights while she sleeps — like a person.</p></div>
-      <div class="feat card"><div class="ic">◱</div><h3>Live brain monitor</h3><p>Watch your own memories form, connect, and glow in a real-time visualization scoped only to your instance.</p></div>
-      <div class="feat card"><div class="ic">⚿</div><h3>Fully private</h3><p>Every user gets an isolated, encrypted memory store. No one can query another user's data — not even by asking Aerith.</p></div>
-      <div class="feat card"><div class="ic">↑</div><h3>Bring your codebase</h3><p>Upload up to 20&nbsp;GB. Aerith reasons over your project and remembers its structure across sessions.</p></div>
-      <div class="feat card"><div class="ic">✧</div><h3>Curious by nature</h3><p>When idle she explores her own knowledge, seeks novelty, and forms hypotheses — getting more useful over time.</p></div>
-      <div class="feat card"><div class="ic">⟳</div><h3>Always improving</h3><p>Self-reflection and test-time reasoning mean fewer mistakes and sharper answers on hard problems.</p></div>
+      <div class="feat card"><div class="ic">◈</div><h3>She remembers you</h3><p>Persistent long-term memory. Tell her once — she recalls it days, weeks, months later. No re-explaining, ever.</p></div>
+      <div class="feat card"><div class="ic">⚿</div><h3>Private to you</h3><p>Your own isolated, encrypted memory store. No one can query your data — not another user, not even by asking Aria.</p></div>
+      <div class="feat card"><div class="ic">◱</div><h3>Watch her think</h3><p>A live brain monitor shows your memories forming, connecting, and glowing in real time — scoped only to you.</p></div>
+      <div class="feat card"><div class="ic">↑</div><h3>Knows your codebase</h3><p>Upload your whole project. She reasons over it and remembers its structure across every session.</p></div>
+      <div class="feat card"><div class="ic">✧</div><h3>Curious on her own</h3><p>When idle she explores her own knowledge, forms hypotheses, and connects ideas — getting sharper over time.</p></div>
+      <div class="feat card"><div class="ic">⟳</div><h3>Checks her own work</h3><p>Self-reflection and test-time reasoning mean fewer mistakes and better answers on the hard problems.</p></div>
     </div>
   </section>
+
+  <section class="section why"><div class="wrap narrow">
+    <h2>Why it's worth paying for</h2>
+    <p class="lead">Free chatbots are a commodity — and they treat your history like one too. Aria is different where it counts:</p>
+    <div class="whygrid">
+      <div class="whyitem"><b>It compounds.</b> Every conversation makes the next one better. Most AI resets to zero; Aria turns your time into a relationship that keeps paying off.</div>
+      <div class="whyitem"><b>It's genuinely private.</b> Not "we promise not to look" — architecturally isolated, per-user encrypted memory. Your world never touches anyone else's.</div>
+      <div class="whyitem"><b>It's your instance.</b> On Pro, a dedicated GPU spins up just for you, and Aria bakes your memories into her own weights so recall survives even offline.</div>
+      <div class="whyitem"><b>It does more than chat.</b> Vision, voice, your codebase, tool use, autonomy — one assistant that actually fits into your work instead of living in a browser tab.</div>
+    </div>
+  </div></section>
 
   <section class="section" id="pricing">
     <div class="wrap">
-      <h2>Simple, honest pricing</h2>
-      <p class="lead">Start free. Upgrade when Aerith becomes indispensable.</p>
+      <h2>Start free. Pay only when she's earned it.</h2>
+      <p class="lead">Try everything with no card. Upgrade for more room, more power, and your own dedicated Aria — with 15 more days before your first charge.</p>
       <div class="price-grid">
         <div class="plan card">
-          <h3>Free</h3>
-          <div class="amt">$0<span>/mo</span></div>
-          <p class="muted">Try the memory magic.</p>
+          <div class="badge" style="background:var(--accent2)">No card needed</div>
+          <h3>Free trial</h3>
+          <div class="amt">$0</div>
+          <p class="muted">14 days to see what she's about.</p>
           <ul>
-            <li><span class="ck">✓</span> <span>Shared instance, <b>private memory</b></span></li>
-            <li><span class="ck">✓</span> <span><b>1&nbsp;GB</b> personal storage</span></li>
-            <li><span class="ck">✓</span> <span>Live brain monitor</span></li>
-            <li><span class="ck">✓</span> <span>Community support</span></li>
+            <li><span class="ck">✓</span> <span>Full <b>private memory</b> instance</span></li>
+            <li><span class="ck">✓</span> <span>Vision, voice &amp; live brain monitor</span></li>
+            <li><span class="ck">✓</span> <span><b>1&nbsp;GB</b> storage</span></li>
+            <li><span class="ck">✓</span> <span><b>No credit card</b> — just an email</span></li>
           </ul>
-          <button class="btn" onclick="openAuth('free')">Start free</button>
+          <button class="btn" onclick="startSignup('trial')">Start free trial</button>
         </div>
         <div class="plan card">
           <h3>Starter</h3>
           <div class="amt">$19<span>/mo</span></div>
-          <p class="muted">For daily companions.</p>
+          <p class="muted">For your everyday companion.</p>
           <ul>
-            <li><span class="ck">✓</span> <span>Everything in Free</span></li>
+            <li><span class="ck">✓</span> <span>Everything in the trial</span></li>
             <li><span class="ck">✓</span> <span><b>5&nbsp;GB</b> codebase upload</span></li>
             <li><span class="ck">✓</span> <span>Priority shared compute</span></li>
             <li><span class="ck">✓</span> <span>Email support</span></li>
           </ul>
-          <button class="btn" onclick="openAuth('starter')">Choose Starter</button>
+          <p class="trialnote">15 days free — no charge until day 15</p>
+          <button class="btn" onclick="startSignup('starter')">Choose Starter</button>
         </div>
         <div class="plan card pop">
           <div class="badge">Most popular</div>
           <h3>Pro</h3>
           <div class="amt">$79<span>/mo</span></div>
-          <p class="muted">Your own dedicated Aerith.</p>
+          <p class="muted">Your own dedicated Aria.</p>
           <ul>
             <li><span class="ck">✓</span> <span>Everything in Starter</span></li>
-            <li><span class="ck">✓</span> <span><b>Dedicated GPU pod</b>, spins up for you</span></li>
+            <li><span class="ck">✓</span> <span><b>Dedicated GPU pod</b>, just for you</span></li>
             <li><span class="ck">✓</span> <span><b>20&nbsp;GB</b> codebase upload</span></li>
             <li><span class="ck">✓</span> <span>Personal weight-baking</span></li>
             <li><span class="ck">✓</span> <span>Priority support</span></li>
           </ul>
-          <button class="btn btn-primary" onclick="openAuth('pro')">Go Pro</button>
+          <p class="trialnote">15 days free — no charge until day 15</p>
+          <button class="btn btn-primary" onclick="startSignup('pro')">Go Pro</button>
         </div>
       </div>
+      <p class="lead" style="margin-top:26px;font-size:15px">Cancel anytime during your trial and you're never charged. Your memories and data are yours to export or delete.</p>
     </div>
   </section>
 </main>
@@ -217,7 +253,7 @@ footer{ border-top:1px solid var(--line); padding:30px 0; color:var(--muted); fo
 </div>
 
 <footer>
-  <div class="wrap">© 2026 MnemonicAI · Aerith is a private, memory-native assistant · <a onclick="show('support')" style="color:var(--accent)">Support</a></div>
+  <div class="wrap">© 2026 MnemonicAI · Aria is a private, memory-native assistant · <a onclick="show('support')" style="color:var(--accent)">Support</a></div>
 </footer>
 
 <!-- auth modal -->
@@ -243,18 +279,27 @@ function setTheme(t){ document.documentElement.dataset.theme=t; localStorage.set
 (function themes(){ const p=document.getElementById("themePick"); THEMES.forEach(t=>{ const s=document.createElement("span"); s.className="swatch"; s.dataset.t=t; s.style.background=THEME_C[t]; s.title=t; s.onclick=()=>setTheme(t); p.appendChild(s); }); setTheme(localStorage.getItem("mn_theme")||"aurora"); })();
 
 function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:"smooth"}); }
-let PENDING_TIER="free";
-function openAuth(tier){ PENDING_TIER=tier||"free"; document.getElementById("authOverlay").classList.remove("hidden"); }
+let PENDING_TIER="trial";
+function openAuth(tier){ PENDING_TIER=tier||"trial"; document.getElementById("authOverlay").classList.remove("hidden"); }
 function closeAuth(){ document.getElementById("authOverlay").classList.add("hidden"); }
-async function fakeSignup(){
-  const email=prompt("Enter your email to create an instance:");
+// primary signup path from the landing CTAs: email -> instant trial (no card)
+// or Stripe checkout (paid, 15-day free trial)
+async function startSignup(tier){
+  PENDING_TIER=tier;
+  const email=prompt(tier==="trial"
+    ? "Enter your email to start your free trial (no card needed):"
+    : "Enter your email to set up your "+tier+" plan (15 days free, no charge until day 15):");
   if(!email) return;
-  const res=await api("/signup",{email,tier:PENDING_TIER});
-  if(!res.ok){ alert("Signup failed. Try again."); return; }
-  if(res.data.checkout_url){ location.href=res.data.checkout_url; return; }
+  const res=await api("/signup",{email,tier});
+  if(!res.ok){ alert("Signup failed. Please try again."); return; }
+  if(res.data.checkout_url){ location.href=res.data.checkout_url; return; }  // paid -> Stripe
+  // trial: show the key and drop them into the app
   document.getElementById("authKey").value=res.data.api_key;
-  document.getElementById("authSub").textContent="Instance created. Your access key is filled in below — save it, then press Enter.";
+  document.getElementById("authOverlay").classList.remove("hidden");
+  document.getElementById("authTitle").textContent="You're in! 🎉";
+  document.getElementById("authSub").innerHTML="Your free trial is live — <b>"+(res.data.trial_days_left||14)+" days</b>. Your access key is below (save it somewhere safe), then press Enter.";
 }
+async function fakeSignup(){ startSignup(PENDING_TIER); }
 async function openPortal(){
   const res=await api("/billing/portal",{},state.user.key);
   if(res.ok && res.data.url){ location.href=res.data.url; }
@@ -300,14 +345,14 @@ function app(view){
 }
 
 function CHAT(){ return `
-  <h2>Chat with Aerith</h2>
+  <h2>Chat with Aria</h2>
   <div class="subt">She remembers everything from your past sessions.</div>
   <div class="chatbox">
     <div class="msgs" id="msgs">
       <div class="msg a">Welcome back. I've kept everything you told me last time — want to pick up where we left off, or start something new?</div>
     </div>
     <div class="composer">
-      <input id="chatIn" placeholder="Ask Aerith anything…" onkeydown="if(event.key==='Enter')sendMsg()">
+      <input id="chatIn" placeholder="Ask Aria anything…" onkeydown="if(event.key==='Enter')sendMsg()">
       <button class="btn btn-primary" onclick="sendMsg()">Send</button>
     </div>
   </div>`;
@@ -323,30 +368,51 @@ async function sendMsg(){ const i=document.getElementById("chatIn"); const t=i.v
 }
 function BRAIN(){ return `
   <h2>Your brain monitor</h2>
-  <div class="subt">Live view of <b>your</b> memories only — isolated from every other user.</div>
+  <div class="subt">Live view of <b>your</b> memories only — isolated from every other user, streamed from your own instance.</div>
   <div class="stat-row">
-    <div class="stat"><div class="n" id="mCount">0</div><div class="l">Memories</div></div>
-    <div class="stat"><div class="n">3</div><div class="l">Adapter version</div></div>
-    <div class="stat"><div class="n">12</div><div class="l">Links formed today</div></div>
-    <div class="stat"><div class="n">idle</div><div class="l">Curiosity</div></div>
+    <div class="stat"><div class="n" id="mCount">…</div><div class="l">Total memories</div></div>
+    <div class="stat"><div class="n" id="mWorking">…</div><div class="l">In working memory</div></div>
+    <div class="stat"><div class="n" id="mSemantic">…</div><div class="l">Consolidated (semantic)</div></div>
+    <div class="stat"><div class="n" id="mStrength">…</div><div class="l">Avg memory strength</div></div>
   </div>
-  <div class="card" style="padding:0;overflow:hidden"><canvas id="brainC" width="820" height="360" style="width:100%;display:block"></canvas></div>`;
+  <div class="card" style="padding:0;overflow:hidden"><canvas id="brainC" width="820" height="360" style="width:100%;display:block"></canvas></div>
+  <div class="muted" id="brainNote" style="font-size:13px;margin-top:10px">Connecting to your instance…</div>`;
+}
+function setTxt(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
+// real tenant-scoped brain stats from the gateway (GET /api/monitor, Bearer key)
+async function fetchBrain(){
+  if(!document.getElementById("brainC")) return null;
+  try{ const r=await fetch("/api/monitor",{headers:{"Authorization":"Bearer "+state.user.key}});
+       return r.ok ? await r.json() : null; }
+  catch(e){ return null; }
 }
 function drawBrain(){ const c=document.getElementById("brainC"); if(!c)return; const x=c.getContext("2d");
-  const cs=getComputedStyle(document.documentElement); const acc=cs.getPropertyValue("--accent").trim(); const acc2=cs.getPropertyValue("--accent2").trim(); const line=cs.getPropertyValue("--line").trim();
-  const N=54, dots=[...Array(N)].map((_,i)=>({x:Math.random()*820,y:Math.random()*360,r:2+Math.random()*3,ph:Math.random()*6.28,sp:.4+Math.random()*.8}));
-  document.getElementById("mCount").textContent=N;
-  let t=0; (function loop(){ if(!document.getElementById("brainC"))return; t+=.02; x.clearRect(0,0,820,360);
-    x.strokeStyle=line; x.lineWidth=1;
-    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){ const a=dots[i],b=dots[j]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(d<95){ x.globalAlpha=(1-d/95)*.5; x.beginPath(); x.moveTo(a.x,a.y); x.lineTo(b.x,b.y); x.stroke(); } }
+  const css=()=>{ const cs=getComputedStyle(document.documentElement);
+    return {acc:cs.getPropertyValue("--accent").trim(), acc2:cs.getPropertyValue("--accent2").trim(), line:cs.getPropertyValue("--line").trim()}; };
+  let dots=[], t=0;
+  function rebuild(n){ n=Math.max(6,Math.min(n,160));   // cap node count for perf
+    while(dots.length<n) dots.push({x:Math.random()*820,y:Math.random()*360,r:2+Math.random()*3,ph:Math.random()*6.28,sp:.4+Math.random()*.8});
+    if(dots.length>n) dots.length=n; }
+  async function refresh(){ const s=await fetchBrain(); const note=document.getElementById("brainNote");
+    if(!s){ if(note) note.textContent="Waiting for your instance to come online…"; return; }
+    const total=(s.episodic||0)+(s.semantic||0)+(s.procedural||0);
+    setTxt("mCount",total); setTxt("mWorking",s.working||0); setTxt("mSemantic",s.semantic||0);
+    setTxt("mStrength",(s.avg_strength_semantic||s.avg_strength_episodic||0).toFixed(2));
+    rebuild(total||6);
+    if(note) note.textContent="● Live — synced with your Aria instance ("+total+" memories, "+(s.working||0)+" active)."; }
+  rebuild(6); refresh();
+  const poll=setInterval(()=>{ if(!document.getElementById("brainC")){ clearInterval(poll); return; } refresh(); }, 4000);
+  (function loop(){ if(!document.getElementById("brainC"))return; t+=.02; const {acc,acc2,line}=css();
+    x.clearRect(0,0,820,360); x.strokeStyle=line; x.lineWidth=1;
+    for(let i=0;i<dots.length;i++)for(let j=i+1;j<dots.length;j++){ const a=dots[i],b=dots[j]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(d<95){ x.globalAlpha=(1-d/95)*.5; x.beginPath(); x.moveTo(a.x,a.y); x.lineTo(b.x,b.y); x.stroke(); } }
     x.globalAlpha=1;
     dots.forEach((d,i)=>{ const pr=d.r*(1+.4*Math.sin(t*d.sp+d.ph)); x.fillStyle=i%3?acc:acc2; x.beginPath(); x.arc(d.x,d.y,pr,0,7); x.fill(); });
     requestAnimationFrame(loop); })();
 }
 function FILES(){ return `
   <h2>My codebase</h2>
-  <div class="subt">Upload your project so Aerith can reason over it and remember its structure.</div>
-  <div class="notice" style="margin-bottom:18px"><span class="ic">⚠</span><span><b>Heads up:</b> all uploaded files are automatically scanned for viruses and malware before Aerith can access them. Don't upload secrets you wouldn't want stored in your private instance.</span></div>
+  <div class="subt">Upload your project so Aria can reason over it and remember its structure.</div>
+  <div class="notice" style="margin-bottom:18px"><span class="ic">⚠</span><span><b>Heads up:</b> all uploaded files are automatically scanned for viruses and malware before Aria can access them. Don't upload secrets you wouldn't want stored in your private instance.</span></div>
   <div class="drop" onclick="document.getElementById('fileIn').click()">
     <input type="file" id="fileIn" class="hidden" onchange="uploadFile(this.files[0])">
     <div style="font-size:30px">↑</div>

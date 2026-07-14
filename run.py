@@ -5,12 +5,12 @@
     python3 run.py demo               # offline narrated lifecycle (no LLM, no network)
     python3 run.py story --llm        # same story, but LM Studio does fact-extraction
     python3 run.py chat               # interactive memory REPL (offline)
-    python3 run.py chat --llm         # memory-augmented chat via LM Studio (Aerith)
+    python3 run.py chat --llm         # memory-augmented chat via LM Studio (Aria)
 
 LM Studio settings come from a .env file or environment variables:
     LMSTUDIO_BASE_URL   (default http://192.168.68.36:1010/v1)
     LMSTUDIO_API_KEY
-    LMSTUDIO_CHAT_MODEL (default Aerith)
+    LMSTUDIO_CHAT_MODEL (default Aria)
     LMSTUDIO_EMBED_MODEL (optional; else the offline HashingEmbedder is used)
 """
 from __future__ import annotations

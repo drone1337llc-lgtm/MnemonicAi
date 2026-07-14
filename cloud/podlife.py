@@ -48,7 +48,7 @@ class ProPods:
                 rec["last"] = time.time()
                 return rec
             pod = self._api("POST", "/pods", {
-                "name": f"aerith-pro-{tenant_id}",
+                "name": f"aria-pro-{tenant_id}",
                 "imageName": self.image,
                 "gpuTypeIds": [self.gpu], "gpuCount": 1,
                 "containerDiskInGb": 30, "volumeInGb": 60,

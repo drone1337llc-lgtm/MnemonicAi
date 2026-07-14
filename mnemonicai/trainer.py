@@ -70,7 +70,7 @@ class SleepTrainer:
             seen.add(key)
             cue = _cue_for(m.content)
             examples.append({"messages": [
-                {"role": "system", "content": "You are Aerith with persistent long-term memory and self-scaffolding."},
+                {"role": "system", "content": "You are Aria with persistent long-term memory and self-scaffolding."},
                 {"role": "user", "content": f"What do you remember about {cue}?"},
                 {"role": "assistant", "content": m.content},
             ]})

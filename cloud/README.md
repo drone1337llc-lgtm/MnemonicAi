@@ -1,6 +1,6 @@
 # MnemonicAI Cloud — multi-tenant SaaS
 
-Turns Aerith into a legitimate web-served AI product: sign in with an access
+Turns Aria into a legitimate web-served AI product: sign in with an access
 key, get a private isolated instance with its own memory + brain monitor,
 manage billing, upload your codebase.
 

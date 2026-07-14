@@ -43,3 +43,13 @@ config.json
 config.json.bak*
 cloud/.env
 cloud/secrets/
+
+# secrets backups, symlinks, large voice models/data (Aria rename hardening)
+cloud/.env.bak*
+models
+voice/jessica-qwen-ft/
+voice/qwen3tts-base/
+voice/qwen3tts-repo/
+voice/jessica_input.jsonl
+voice/jessica_prepared.jsonl
+voice/*.bak

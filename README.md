@@ -4,7 +4,7 @@ MnemonicAI is a **memory-native AI system**: a language model that runs entirely
 your own hardware, remembers what you tell it across sessions, consolidates those
 memories while it "sleeps," and can **bake** them permanently into its own weights.
 
-The model it serves today is **Aerith** — a 9B-parameter fusion model (see
+The model it serves today is **Aria** — a 9B-parameter fusion model (see
 "The model" below). Everything is watchable live in the **brain monitor**, a
 visualization of memories as living dots inside a brain.
 
@@ -13,7 +13,7 @@ visualization of memories as living dots inside a brain.
 
 ## ☁️ Cloud GPU deployment (current, since 2026-07-13)
 
-Aerith now runs on a RunPod A40 (48GB) at **raw f16 precision** — the full
+Aria now runs on a RunPod A40 (48GB) at **raw f16 precision** — the full
 MnemonicAI stack (memory, sleep-training bakes, embedding sidecar, monitor)
 lives pod-side next to the weights. This folder is the source of truth for
 code; a pre-cloud snapshot lives at `~/Documents/MnemonicAi-local-version`.
@@ -29,7 +29,7 @@ code; a pre-cloud snapshot lives at `~/Documents/MnemonicAi-local-version`.
 - **Public endpoint:** `https://my.mnemonicai.org/v1` — Cloudflare tunnel →
   local `omni-proxy.service` (validates Omni Scale client keys) → SSH tunnel
   → pod. systemd: `aerith-tunnel.service`, `omni-proxy.service`.
-- **Curiosity engine:** when idle, Aerith explores autonomously — novelty
+- **Curiosity engine:** when idle, Aria explores autonomously — novelty
   seeking, hypothesis testing, knowledge-graph walks, introspection — scored
   by information gain; novel insights become memories and feed sleep-training.
 - See `SYSTEM-CHEATSHEET.md` for the complete system reference, `CHANGES.md`
@@ -39,7 +39,7 @@ code; a pre-cloud snapshot lives at `~/Documents/MnemonicAi-local-version`.
 
 1. [Quick start](#1-quick-start)
 2. [What's running: the architecture](#2-whats-running-the-architecture)
-3. [The model (Aerith)](#3-the-model-aerith)
+3. [The model (Aria)](#3-the-model-aerith)
 4. [The brain monitor](#4-the-brain-monitor)
 5. [Talking to it: the API](#5-talking-to-it-the-api)
 6. [Memory: how it works](#6-memory-how-it-works)
@@ -59,7 +59,7 @@ Everything already installed on this box? Then it's just:
 ```bash
 # it's probably already running as a service:
 curl http://localhost:8400/health
-# → {"status": "ok", "model": "Aerith", "backend": "hybrid", ...}
+# → {"status": "ok", "model": "Aria", "backend": "hybrid", ...}
 
 # open the brain monitor:
 xdg-open http://localhost:8400/
@@ -115,9 +115,9 @@ Point any OpenAI-compatible client (OpenClaw, Hermes, LM Studio, curl…) at
 
 ---
 
-## 3. The model (Aerith)
+## 3. The model (Aria)
 
-Aerith is a 9B model served as a Q4_K_M GGUF. Canonical locations (fixed
+Aria is a 9B model served as a Q4_K_M GGUF. Canonical locations (fixed
 names — version is metadata, not filename, so automation never breaks):
 
 | What | Where |
@@ -165,12 +165,12 @@ Open `http://localhost:8400/`. What you're looking at:
 
 ## 5. Talking to it: the API
 
-OpenAI-compatible; the model name is `Aerith`:
+OpenAI-compatible; the model name is `Aria`:
 
 ```bash
 curl http://localhost:8400/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"Aerith","messages":[{"role":"user","content":"hi"}]}'
+  -d '{"model":"Aria","messages":[{"role":"user","content":"hi"}]}'
 ```
 
 Every conversation turn feeds the memory engine automatically (perceive →
@@ -277,7 +277,7 @@ swap endpoints/scripts.
 
 | Key | Meaning |
 |---|---|
-| `model_name` | display/API name (`Aerith`) |
+| `model_name` | display/API name (`Aria`) |
 | `model_path` | HF safetensors dir (used by sleep-training) |
 | `gguf_path` | GGUF the engine serves |
 | `backend` | `hybrid` (serve via llama.cpp + train via transformers) |
