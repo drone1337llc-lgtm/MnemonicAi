@@ -124,9 +124,9 @@
 <div class="ui">
   <header>
     <div class="title"><b>MnemonicAi</b><span class="accent">.</span>
-      <small>a living memory, in glass — ornith-1.0-9b</small></div>
+      <small>a living memory, in glass — Aerith</small></div>
     <div class="chips">
-      <span class="chip">model <b id="cModel">ornith-1.0-9b</b></span>
+      <span class="chip">model <b id="cModel">Aerith</b></span>
       <span class="chip">adapter <b id="cAdapter">v0</b></span>
       <span class="chip">t <b id="cClock">0.0s</b></span>
       <span class="badge sim" id="cBadge"><span class="dot"></span>SIMULATED</span>
@@ -498,7 +498,7 @@ let logItems=[];
 function hexA2(hex,a){if(!hex||hex[0]!=="#")return hex;const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
 function logEvent(tag,color,msg){ logItems.unshift({tag,color,msg}); logItems=logItems.slice(0,9);
   $("log").innerHTML=logItems.map(l=>`<div class="le"><span class="tag" style="color:${l.color};background:${hexA2(l.color,0.14)}">${l.tag}</span><span class="msg">${esc(l.msg)}</span></div>`).join(""); }
-function setTicker(role,preview){ $("ticker").innerHTML=`<b>${role==="assistant"?"ornith":"user"}</b> ${esc(cut(preview,90))}`; }
+function setTicker(role,preview){ $("ticker").innerHTML=`<b>${role==="assistant"?"Aerith":"user"}</b> ${esc(cut(preview,90))}`; }
 function renderHUD(){
   $("sWork").textContent=(MEM.working&&MEM.working.length)||0;
   $("sEpi").textContent=MEM.counts.episodic||0; $("sSem").textContent=MEM.counts.semantic||0;
