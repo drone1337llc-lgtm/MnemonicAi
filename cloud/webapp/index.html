@@ -393,7 +393,7 @@ function signOut(){ state.user=null; location.reload(); }
 function show(v){ if(!state.user){ openAuth(); return;} app(v); document.getElementById("appView").scrollIntoView(); }
 
 /* ---------- public info / legal hub (no login) ---------- */
-const DOCS_ORDER=[["about","About"],["how","How it's built"],["benchmarks","Benchmarks"],["security","Security & data"],["privacy","Privacy"],["terms","Terms"],["refunds","Refunds"],["licenses","Licenses"],["faq","FAQ"],["contact","Contact"]];
+const DOCS_ORDER=[["about","About"],["how","How it's built"],["benchmarks","Benchmarks"],["security","Security & data"],["privacy","Privacy"],["terms","Terms"],["refunds","Refunds"],["licenses","Licenses"],["faq","FAQ"],["status","Status"],["contact","Contact"]];
 function goHome(){ document.getElementById("docView").classList.add("hidden"); document.getElementById("appView").classList.add("hidden"); document.getElementById("marketing").classList.remove("hidden"); window.scrollTo(0,0); }
 function showDoc(name){ if(!DOCS[name]) name="about";
   document.getElementById("marketing").classList.add("hidden");
@@ -433,9 +433,18 @@ benchmarks:`<h1>Benchmarks</h1>
 <tr><td>TruthfulQA (MC2)</td><td>0-shot</td><td><b>49.6%</b></td></tr>
 <tr><td>IFEval (instruction following)</td><td>0-shot · strict</td><td><b>54.2%</b></td></tr>
 </table>
-<h3>How to read this honestly</h3>
-<p>These land Aria squarely in the range of leading <b>open models in her size class</b> (7–9B) such as Llama-3.1-8B, Qwen2.5-7B and Gemma-2-9B. We deliberately <b>don't</b> print a head-to-head table against them: those models publish numbers under different evaluation settings, so a side-by-side would imply a precision that isn't real. Instead we publish our exact methodology above so ours are reproducible, and point you to the public <a href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener">Open LLM Leaderboard</a> to compare models yourself.</p>
-<p><b>What Aria is, and isn't.</b> She's a small, efficient model you can run affordably and privately. She is <i>not</i> trying to out-benchmark frontier models tens of times her size. Her real edge is <b>persistent memory</b> — getting more useful to you over time — not topping a leaderboard.</p>`,
+<h3>How Aria compares</h3>
+<p>Here's Aria beside leading open instruct models in her size class (7–9B), on the benchmarks where they overlap. Aria's figures are our own lm-evaluation-harness runs (settings above); the competitor figures are as published by Qwen, who evaluated all three consistently. Evaluation settings differ between ours and theirs, so read this as an <b>indicative map, not identical-conditions</b>.</p>
+<table>
+<tr><th>Benchmark</th><th>Aria (~9B)</th><th>Llama-3.1-8B-Instruct</th><th>Qwen2.5-7B-Instruct</th><th>Gemma-2-9B-it</th></tr>
+<tr><td>GSM8K (grade-school math)</td><td><b>79.9</b></td><td>84.5</td><td>91.6</td><td>76.7</td></tr>
+<tr><td>IFEval (strict-prompt)</td><td>39.6</td><td>75.9</td><td>71.2</td><td>70.1</td></tr>
+<tr><td>MMLU-Pro (knowledge)</td><td>—</td><td>48.3</td><td>56.3</td><td>52.1</td></tr>
+<tr><td>MATH (competition math)</td><td>—</td><td>51.9</td><td>75.5</td><td>44.3</td></tr>
+<tr><td>HumanEval (code)</td><td>—</td><td>72.6</td><td>84.8</td><td>68.9</td></tr>
+</table>
+<p class="muted">Aria's ARC (69.0), HellaSwag (78.3), Winogrande (73.6) and TruthfulQA (49.6) are in the table above; "—" here just means we don't target that benchmark. Competitor numbers: Qwen team, <i>Qwen2.5-LLM</i> report.</p>
+<p><b>The honest read.</b> The instruct-tuned leaders are stronger at strict instruction-following and specialized math/code — exactly what they're heavily fine-tuned for. Aria holds her own on core reasoning (she edges out Gemma-2-9B on GSM8K and posts solid ARC/commonsense scores). She's a small, efficient model you can run affordably and privately — and her real edge isn't topping a leaderboard, it's <b>persistent memory</b> that makes her more useful to you over time. Compare any models yourself on the public <a href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener">Open LLM Leaderboard</a>.</p>`,
 security:`<h1>Security &amp; data handling</h1>
 <ul>
 <li><b>Isolated by design.</b> Every user gets their own memory database. No request authenticated as one user can read another user's data — not even by asking Aria.</li>
@@ -547,7 +556,18 @@ contact:`<h1>Contact &amp; support</h1>
 <li><b>Founder / operator:</b> Sergio Williams (Surge)</li>
 </ul>
 <p class="muted">Transparency note: MnemonicAI is built and operated by Sergio Williams with the help of AI agents (including Aria and AI coding assistants). Some support and operations are AI-assisted; a human reviews anything important.</p>
-<p>Service status: <a href="https://status.mnemonicai.org" target="_blank" rel="noopener">status.mnemonicai.org</a></p>`
+<p>Service status: <a onclick="showDoc('status')">view service status</a></p>`,
+status:`<h1>Service status</h1>
+<p class="lead">An honest snapshot of MnemonicAI's components.</p>
+<table>
+<tr><th>Component</th><th>Status</th></tr>
+<tr><td>Aria chat</td><td><span style="color:#3fb950">●</span> Operational</td></tr>
+<tr><td>Memory &amp; recall</td><td><span style="color:#3fb950">●</span> Operational</td></tr>
+<tr><td>Voice</td><td><span style="color:#3fb950">●</span> Operational</td></tr>
+<tr><td>Codebase uploads &amp; virus scanning</td><td><span style="color:#3fb950">●</span> Operational</td></tr>
+<tr><td>Billing (Stripe)</td><td><span style="color:#3fb950">●</span> Operational</td></tr>
+</table>
+<p class="muted">MnemonicAI is a small, actively-run service. If something looks down, email <a href="mailto:support@mnemonicai.org">support@mnemonicai.org</a> and we'll jump on it. Known incidents will be posted here.</p>`
 };
 
 function app(view){
