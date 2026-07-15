@@ -38,6 +38,8 @@ RAW_ENGINE_KEY = os.environ.get("MNEM_RAW_ENGINE_KEY", "")  # keyed engines (omn
 # default identity for engines that aren't identity-fine-tuned (e.g. raw omni)
 ARIA_IDENTITY = os.environ.get("MNEM_IDENTITY", "")
 EMBED_URL = os.environ.get("MNEM_EMBED_URL", "http://127.0.0.1:8404/v1")
+# n8n automation webhooks (observe/notify only — never billing/tenant writes)
+N8N_HOOKS = os.environ.get("MNEM_N8N_HOOKS", "https://hooks.mnemonicai.org/webhook")
 
 store = TenantStore(root=os.environ.get("MNEM_TENANTS", "/workspace/tenants"))
 stripe = Stripe()
@@ -46,6 +48,20 @@ stripe = Stripe()
 from mc_emitter import MCEmitter
 _env = stripe.env
 mc = MCEmitter(_env.get("MC_USAGE_URL", ""), _env.get("MC_BUSINESS_KEY", ""))
+
+
+def _fire_hook(path, payload):
+    """Best-effort POST to an n8n observe/notify webhook. Never blocks or breaks
+    the request if n8n is unreachable."""
+    if not N8N_HOOKS:
+        return
+    try:
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(f"{N8N_HOOKS}/{path}", data=data, method="POST")
+        req.add_header("Content-Type", "application/json")
+        urllib.request.urlopen(req, timeout=4)
+    except Exception:
+        pass
 
 # per-tenant isolated memory (lazy so the module imports even without the
 # mnemonicai package present, e.g. in a pure-billing deployment)
@@ -121,6 +137,8 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/api/monitor":
             return self._monitor()
+        if path == "/api/admin/trials":
+            return self._admin_trials()
         # static web app
         rel = "index.html" if path in ("/", "") else path.lstrip("/")
         fp = os.path.normpath(os.path.join(WEBAPP, rel))
@@ -153,11 +171,16 @@ class Handler(BaseHTTPRequestHandler):
         if tier == "trial":
             # no credit card — instant, time-limited taste of the product
             raw, t = store.create(email=email, tier="trial")
+            _fire_hook("new-signup", {"email": email, "tier": "trial",
+                                      "tenant_id": t.tenant_id,
+                                      "trial_days_left": t.trial_days_left})
             return self._send(200, {"tenant_id": t.tenant_id, "api_key": raw,
                                     "tier": "trial", "trial_days_left": t.trial_days_left,
                                     "message": "Your free trial is live — no card needed."})
         # paid: create as trial-on-that-tier, Stripe collects card + 15-day free trial
         raw, t = store.create(email=email, tier=tier)
+        _fire_hook("new-signup", {"email": email, "tier": tier,
+                                  "tenant_id": t.tenant_id, "trial_days_left": 0})
         price = stripe.env.get(f"STRIPE_PRICE_{tier.upper()}", "")
         base = f"https://{self.headers.get('Host','www.mnemonicai.org')}"
         sess = stripe.checkout(tier, price, email, t.tenant_id, base)
@@ -178,6 +201,22 @@ class Handler(BaseHTTPRequestHandler):
                                 "dedicated": t.dedicated,
                                 "trial_days_left": t.trial_days_left,
                                 "is_admin": t.role == "admin"})
+
+    def _admin_trials(self):
+        """Admin-only: trial tenants (email + expiry) for the n8n trial-digest.
+        The registry stores full tenant metadata (email, trial_ends); only the
+        raw API key is hashed — so exposing this to an admin is safe."""
+        t = self._tenant()
+        if not t or t.role != "admin":
+            return self._send(403, {"error": "admin only"})
+        trials = []
+        with store._lock:
+            for tt in store._by_hash.values():
+                if tt.tier == "trial" and tt.trial_ends:
+                    trials.append({"email": tt.email, "tenant_id": tt.tenant_id,
+                                   "trial_ends": tt.trial_ends,
+                                   "trial_days_left": tt.trial_days_left})
+        return self._send(200, {"trials": trials, "count": len(trials)})
 
     def _chat(self):
         t = self._tenant()
