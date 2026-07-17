@@ -127,7 +127,10 @@ header.shell {
   display: flex; align-items: center; gap: 14px; height: var(--shell-h);
   padding: 0 20px; border-bottom: 1px solid var(--line);
   background: rgba(2, 10, 12, 0.72); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  overflow-x: auto; scrollbar-width: none;
 }
+header.shell::-webkit-scrollbar { display: none; }
+body { overflow-x: clip; }
 .brand { display: flex; align-items: center; gap: 11px; min-width: 0; flex-shrink: 0; cursor: pointer; }
 .brand-mark { width: 34px; height: 34px; flex-shrink: 0; object-fit: contain; filter: drop-shadow(0 0 10px rgba(46, 196, 214, 0.35)); }
 .brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }

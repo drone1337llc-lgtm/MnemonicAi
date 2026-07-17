@@ -41,12 +41,23 @@ class ProPods:
             return {"error": str(e)[:120]}
 
     def ensure(self, tenant_id: str) -> dict:
-        """Return the tenant's live pod, creating it if needed. Bumps activity."""
+        """Return the tenant's live pod, resuming a stopped one or creating fresh.
+        Resuming (not recreating) preserves the pod volume — the tenant's baked
+        adapter/expert artifacts and model cache survive idle periods."""
         with self._lock:
             rec = self._pods.get(tenant_id)
             if rec and rec.get("pod_id"):
                 rec["last"] = time.time()
-                return rec
+                if rec.get("stopped"):
+                    res = self._api("POST", f"/pods/{rec['pod_id']}/start")
+                    if "error" not in res:
+                        rec["stopped"] = False
+                        return rec
+                    # host capacity gone — the stopped pod can't resume; replace it
+                    self._api("DELETE", f"/pods/{rec['pod_id']}")
+                    self._pods.pop(tenant_id, None)
+                else:
+                    return rec
             pod = self._api("POST", "/pods", {
                 "name": f"aria-pro-{tenant_id}",
                 "imageName": self.image,
@@ -67,6 +78,18 @@ class ProPods:
                 self._pods[tenant_id]["last"] = time.time()
 
     def stop(self, tenant_id: str) -> None:
+        """Idle-stop: halt GPU billing but KEEP the pod + volume so the tenant's
+        Aria2 artifacts persist. ensure() resumes it on next activity."""
+        with self._lock:
+            rec = self._pods.get(tenant_id)
+            if rec:
+                rec["stopped"] = True
+        if rec and rec.get("pod_id"):
+            self._api("POST", f"/pods/{rec['pod_id']}/stop")
+
+    def terminate(self, tenant_id: str) -> None:
+        """Cancellation path ONLY: destroy the pod AND its volume (tenant data
+        on the pod is gone for good — call on subscription end, never on idle)."""
         with self._lock:
             rec = self._pods.pop(tenant_id, None)
         if rec and rec.get("pod_id"):
@@ -78,7 +101,7 @@ class ProPods:
             now = time.time()
             with self._lock:
                 idle = [tid for tid, r in self._pods.items()
-                        if now - r["last"] > IDLE_STOP_S]
+                        if now - r["last"] > IDLE_STOP_S and not r.get("stopped")]
             for tid in idle:
                 print(f"[propods] tenant {tid} idle >30m — stopping pod")
                 self.stop(tid)
