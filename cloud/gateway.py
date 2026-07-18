@@ -141,6 +141,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._admin_trials()
         # static web app
         rel = "index.html" if path in ("/", "") else path.lstrip("/")
+        if not rel.endswith(".html") and os.path.isfile(os.path.join(WEBAPP, rel + ".html")):
+            rel += ".html"  # allow extensionless routes like /tools
         fp = os.path.normpath(os.path.join(WEBAPP, rel))
         if not fp.startswith(WEBAPP) or not os.path.isfile(fp):
             fp = os.path.join(WEBAPP, "index.html")
